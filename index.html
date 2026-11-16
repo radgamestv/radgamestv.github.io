@@ -168,6 +168,22 @@
   .play:hover { transform: translateY(-2px); box-shadow: 0 8px 0 var(--deep-blue); }
   .play:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--deep-blue); }
   .play[aria-disabled="true"] { background: #8d9ad8; pointer-events: none; }
+  .actions { display: flex; gap: 14px; flex-wrap: wrap; }
+  .play.alt { background: var(--white); }
+  .play[hidden] { display: none; }
+
+  /* a game running inside the TV */
+  /* the game runs at a full desktop size, then shrinks to fit the TV */
+  .screen iframe {
+    position: absolute; left: 0; top: 0; z-index: 6;
+    width: 1280px; height: 960px; border: 0; background: #000;
+    transform-origin: 0 0;
+  }
+  .screen:fullscreen iframe { width: 100%; height: 100%; transform: none; }
+  .screen.playing .osd { display: none; }
+  .screen.playing::before, .screen.playing::after { z-index: 7; opacity: .45; }
+  .screen:fullscreen { border-radius: 0; box-shadow: none; }
+  .screen:fullscreen::before, .screen:fullscreen::after { display: none; }
 
   /* ---------- channel guide ---------- */
   section { margin-top: 90px; }
@@ -201,7 +217,7 @@
     .grille { display: none; }
     .ch-btn { width: 60px; height: 60px; }
     .now { grid-template-columns: 1fr; }
-    .now .play { justify-self: start; }
+    .now .actions { justify-self: start; }
     header.top { flex-wrap: wrap; gap: 10px 0; }
     .logo { font-size: 1.7rem; }
     .guide button { grid-template-columns: 56px 1fr; }
@@ -245,7 +261,10 @@
         <h1 id="title"></h1>
         <p class="meta" id="meta"></p>
       </div>
-      <a class="play" id="play" href="#">Play it</a>
+      <div class="actions">
+        <a class="play" id="play" href="#">Play it</a>
+        <button class="play alt" id="full" type="button" hidden>Full screen</button>
+      </div>
       <p class="blurb" id="blurb"></p>
     </div>
 
@@ -279,8 +298,11 @@
    madeWith- the tool you made it in (Scratch, Godot, etc.)
    year    - when you made it
    blurb   - one or two sentences about the game
-   link    - where people go to play it (itch.io page, Scratch page...)
-             leave it as "" if it's not ready yet
+   game    - if the game is an HTML file in this site, put its path
+             here, like "games/my-game.html". Then it plays right
+             inside the TV, and people can go full screen.
+   link    - OR a web page where people go to play it (itch.io,
+             Scratch...). Leave both as "" if it's not ready yet.
    image   - a picture for the TV screen. Put the image in an
              "images" folder and write "images/yourfile.png".
              Leave it as "" to show the title instead.
@@ -288,34 +310,15 @@
    ============================================================== */
 const GAMES = [
   {
-    title: "Sample Game One",
-    genre: "Platformer",
-    madeWith: "Scratch",
+    title: "Foods vs Fatties",
+    genre: "Food defense",
+    madeWith: "Claude",
     year: "2026",
-    blurb: "Replace this with your real game. Say what the player does and what makes it fun.",
+    blurb: "The hungry crowd is coming for your snacks! Plant foods on the diner floor to stop the fatties before they reach the kitchen.",
+    game: "games/foods-vs-fatties.html",
     link: "",
     image: "",
-    color: "#e6337a"
-  },
-  {
-    title: "Sample Game Two",
-    genre: "Puzzle",
-    madeWith: "Godot",
-    year: "2026",
-    blurb: "Another spot for a game. Delete any samples you don't need.",
-    link: "",
-    image: "",
-    color: "#14a37f"
-  },
-  {
-    title: "Sample Game Three",
-    genre: "Arcade",
-    madeWith: "GameMaker",
-    year: "2025",
-    blurb: "Old games count too. Put your very first one on here.",
-    link: "",
-    image: "",
-    color: "#ff8a1f"
+    color: "#d9452b"
   }
 ];
 
@@ -350,6 +353,7 @@ function tune(i) {
   current = (i + GAMES.length) % GAMES.length;
   const g = GAMES[current];
 
+  stopGame();
   const pic = $("picture");
   pic.innerHTML = "";
   if (g.image) {
@@ -368,8 +372,16 @@ function tune(i) {
   $("blurb").textContent = g.blurb;
 
   const play = $("play");
-  if (g.link) {
+  const full = $("full");
+  full.hidden = !g.game;
+  play.removeAttribute("target");
+  if (g.game) {
+    play.href = "#";
+    play.textContent = "Play it";
+    play.removeAttribute("aria-disabled");
+  } else if (g.link) {
     play.href = g.link;
+    play.target = "_blank";
     play.textContent = "Play it";
     play.removeAttribute("aria-disabled");
   } else {
@@ -387,10 +399,64 @@ function tune(i) {
   if (!reduceMotion) s.classList.add("on");
 }
 
+/* ---------- playing a game inside the TV ---------- */
+function startGame() {
+  const g = GAMES[current];
+  if (!g.game) return null;
+  const screen = document.querySelector(".screen");
+  let frame = screen.querySelector("iframe");
+  if (!frame) {
+    frame = document.createElement("iframe");
+    frame.src = g.game;
+    frame.title = g.title;
+    frame.allow = "fullscreen; autoplay; gamepad";
+    frame.setAttribute("allowfullscreen", "");
+    screen.appendChild(frame);
+    screen.classList.add("playing");
+    fitGame();
+  }
+  frame.focus();
+  return frame;
+}
+function fitGame() {
+  const screen = document.querySelector(".screen");
+  const frame = screen.querySelector("iframe");
+  if (!frame) return;
+  const isFull = document.fullscreenElement === screen || document.webkitFullscreenElement === screen;
+  frame.style.transform = isFull ? "" : `scale(${screen.clientWidth / 1280})`;
+}
+window.addEventListener("resize", fitGame);
+document.addEventListener("fullscreenchange", fitGame);
+document.addEventListener("webkitfullscreenchange", fitGame);
+function stopGame() {
+  const screen = document.querySelector(".screen");
+  const frame = screen.querySelector("iframe");
+  if (frame) frame.remove();
+  screen.classList.remove("playing");
+}
+$("play").addEventListener("click", (e) => {
+  if (!GAMES[current].game) return;
+  e.preventDefault();
+  startGame();
+});
+$("full").addEventListener("click", () => {
+  const g = GAMES[current];
+  const screen = document.querySelector(".screen");
+  startGame();
+  if (screen.requestFullscreen) {
+    screen.requestFullscreen().then(() => screen.querySelector("iframe")?.focus()).catch(() => window.open(g.game, "_blank"));
+  } else if (screen.webkitRequestFullscreen) {
+    screen.webkitRequestFullscreen();
+  } else {
+    window.open(g.game, "_blank");  /* iPhones: open the game on its own page */
+  }
+});
+
 $("up").addEventListener("click", () => tune(current + 1));
 $("down").addEventListener("click", () => tune(current - 1));
 document.addEventListener("keydown", (e) => {
   if (e.target.closest("input, textarea")) return;
+  if (document.querySelector(".screen.playing")) return;
   if (e.key === "ArrowRight") tune(current + 1);
   if (e.key === "ArrowLeft") tune(current - 1);
 });
