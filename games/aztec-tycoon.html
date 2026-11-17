@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aztec Tycoon | Rad Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Luckiest+Guy&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  /* ===== AZTEC LOOK =====
+     Colors from Aztec codex paintings: obsidian black, bark paper (amate),
+     turquoise, jade, red ochre and gold. Stepped shapes everywhere!       */
+  :root {
+    --obsidian: #1a1412; --stone: #3d302a; --stone2: #57463c; --stone3: #6e5b4e;
+    --amate: #ead9b2; --amate2: #d9c393; --turq: #1fa89a; --turq2: #4fd1c0;
+    --jade: #2e8b57; --red: #b2321f; --ochre: #d98c2b; --gold: #f2b134; --cream: #fff4dc;
+    /* stepped-pyramid band used for borders */
+    --greca: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='16'%3E%3Crect width='32' height='16' fill='%23b2321f'/%3E%3Cpath d='M0 16V12H4V8H8V4H12V0H20V4H24V8H28V12H32V16Z' fill='%23f2b134'/%3E%3Crect x='14' y='6' width='4' height='4' fill='%231a1412'/%3E%3Cpath d='M0 16V15H32V16Z' fill='%231a1412'/%3E%3C/svg%3E");
+    /* notched "carved stone" corners */
+    --steps: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, calc(100% - 3px) 3px, calc(100% - 3px) 6px, 100% 6px,
+      100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px), calc(100% - 3px) calc(100% - 3px), calc(100% - 6px) calc(100% - 3px),
+      calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 3px), 3px calc(100% - 3px), 3px calc(100% - 6px), 0 calc(100% - 6px),
+      0 6px, 3px 6px, 3px 3px, 6px 3px);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; height: 100vh; display: flex; flex-direction: column;
+    background: var(--obsidian); color: var(--cream);
+    font-family: 'Nunito', sans-serif; font-weight: 700;
+  }
+  .title { font-family: 'Bungee', 'Luckiest Guy', Impact, sans-serif; font-weight: 400; letter-spacing: 1px; }
+  .glyph { width: 30px; height: 30px; image-rendering: auto; vertical-align: middle; flex-shrink: 0; }
+
+  /* top bar: obsidian stone with stepped bands */
+  header {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 18px 16px 18px;
+    background:
+      var(--greca) top left / 32px 10px repeat-x,
+      var(--greca) bottom left / 32px 10px repeat-x,
+      repeating-linear-gradient(135deg, rgba(255,255,255,.025) 0 6px, transparent 6px 12px),
+      linear-gradient(#2b211c, #1a1412);
+    border-bottom: 3px solid var(--obsidian);
+  }
+  header h1 {
+    margin: 0; font-size: 30px; color: var(--gold);
+    text-shadow: 2px 2px 0 var(--red), 4px 4px 0 var(--obsidian);
+  }
+  header a { color: var(--amate2); font-size: 13px; }
+  .stat {
+    display: flex; align-items: center; gap: 6px;
+    background: linear-gradient(var(--stone2), var(--stone)); padding: 5px 12px 5px 8px; font-size: 21px;
+    border: 2px solid var(--turq); box-shadow: inset 0 0 0 2px var(--obsidian);
+    clip-path: var(--steps);
+  }
+  .stat small { font-size: 12px; color: var(--gold); margin-left: 4px; }
+  .faith { gap: 8px; }
+  .faith .bar {
+    width: 120px; height: 16px; background: var(--obsidian); overflow: hidden; border: 2px solid var(--gold);
+    position: relative;
+  }
+  .faith .bar::after {   /* stone block lines */
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 11px, rgba(0,0,0,.45) 11px 12px);
+  }
+  .faith .fill { height: 100%; width: 100%; background: var(--jade); transition: width .3s, background .3s; }
+  #soundWrap { margin-left: auto; position: relative; }
+  #soundBtn { padding: 3px 8px; }
+  #soundBtn .glyph { width: 30px; height: 30px; }
+  #soundMenu {
+    position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; display: none;
+    width: 240px; padding: 14px 10px 10px !important;
+  }
+  #soundMenu.open { display: block; }
+  .soundTitle { font-family: 'Bungee', Impact, sans-serif; color: var(--red); font-size: 14px; margin: 0 4px 6px; }
+  #soundMenu button {
+    width: 100%; display: flex; align-items: center; gap: 8px; text-align: left; margin-bottom: 6px;
+    padding: 6px 10px; font-weight: 800; font-size: 15px; color: var(--obsidian);
+    background: rgba(255,255,255,.35); border: 2px solid var(--obsidian);
+  }
+  #soundMenu button .glyph { width: 28px; height: 28px; }
+  #soundMenu button.chosen { background: linear-gradient(#2fa36a, var(--jade)); color: #fff; }
+  #helpBtn { padding: 7px 13px; }
+
+  /* layout */
+  main { flex: 1; display: flex; min-height: 0; }
+  #map { flex: 1.5; position: relative; min-width: 0; overflow: hidden; border-right: 4px solid var(--obsidian); }
+  #map canvas { display: block; width: 100%; height: 100%; }
+  #side {
+    width: 370px; padding: 12px; overflow-y: auto;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 2px, transparent 2px 46px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.12) 0 2px, transparent 2px 90px),
+      linear-gradient(var(--stone), #2e241f);
+  }
+  h2 {
+    display: flex; align-items: center; gap: 8px;
+    margin: 14px 0 10px; font-size: 19px; color: var(--gold); text-shadow: 2px 2px 0 var(--obsidian);
+  }
+  h2::after { content: ''; flex: 1; height: 10px; background: var(--greca) left / 20px 10px repeat-x; opacity: .9; }
+  h2:first-child { margin-top: 2px; }
+
+  /* buttons: carved stone tablets */
+  button { font: inherit; cursor: pointer; border: none; border-radius: 0; clip-path: var(--steps); }
+  button:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.6); }
+  button:active:not(:disabled) { transform: translateY(2px); }
+
+  /* shop cards: painted on bark paper */
+  .buy {
+    width: 100%; display: flex; align-items: center; gap: 10px; text-align: left;
+    background:
+      repeating-linear-gradient(8deg, rgba(120,90,50,.08) 0 2px, transparent 2px 7px),
+      linear-gradient(var(--amate), var(--amate2));
+    color: var(--obsidian); padding: 9px 12px 9px 10px; margin-bottom: 8px;
+    border: 3px solid var(--obsidian); box-shadow: inset 4px 0 0 var(--red), inset 0 -3px 0 rgba(0,0,0,.15);
+  }
+  .buy .glyph { width: 46px; height: 46px; }
+  .buy .name { font-size: 17px; font-weight: 800; }
+  .buy .price { color: var(--red); }
+  .buy .info { font-size: 12.5px; color: #6b4a2a; }
+  .buy .count {
+    margin-left: auto; font-size: 18px; font-weight: 800; color: var(--cream); min-width: 36px; text-align: center;
+    background: var(--obsidian); padding: 2px 6px; border: 2px solid var(--turq);
+  }
+  .buy.locked, .buy.locked:disabled {
+    opacity: 1; filter: none; cursor: not-allowed;
+    background: repeating-linear-gradient(8deg, rgba(0,0,0,.05) 0 2px, transparent 2px 7px), linear-gradient(#a4927a, #8c7a62); opacity: .85;
+    box-shadow: inset 4px 0 0 #6e5b4e;
+  }
+  .buy.locked .name, .buy.locked .info { color: #5a4636; }
+  .buy.placing { box-shadow: inset 4px 0 0 var(--red), 0 0 0 3px var(--gold); background: #fff3cf; }
+  .small {
+    background: linear-gradient(var(--stone3), var(--stone2)); color: var(--cream); padding: 7px 14px;
+    border: 2px solid var(--gold); font-weight: 800;
+  }
+
+  /* jobs */
+  .job {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    background: linear-gradient(#2a201b, #211915); padding: 8px 10px; margin-bottom: 8px;
+    border: 2px solid var(--stone3); border-left: 5px solid var(--turq);
+  }
+  .job .glyph { width: 36px; height: 36px; }
+  .job .name { font-size: 16px; }
+  .job .info { font-size: 12px; color: var(--amate2); }
+  .job .info.warn { color: #ff9b85; }
+  .job .num {
+    font-size: 21px; font-weight: 800; color: var(--gold); min-width: 54px; text-align: center;
+    background: var(--obsidian); border: 2px solid var(--gold); padding: 0 6px;
+  }
+  .job .btns { width: 100%; display: flex; gap: 4px; margin-top: 2px; }
+  .job .btns button {
+    flex: 1; padding: 5px 2px; font-weight: 800; font-size: 13px; color: var(--cream);
+    background: linear-gradient(#2fa36a, var(--jade)); border: 2px solid var(--obsidian);
+  }
+  .job .btns button.minus { background: linear-gradient(#cc4a33, var(--red)); }
+
+  /* enemies */
+  .region {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Bungee', Impact, sans-serif; font-weight: 400; font-size: 13px; letter-spacing: .5px;
+    color: var(--turq2); margin: 10px 2px 6px;
+  }
+  .info.locked { font-size: 12px; color: var(--amate2); margin: -2px 2px 8px; }
+  .enemy {
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(#2a201b, #211915); padding: 8px 10px; margin-bottom: 7px;
+    border: 2px solid var(--stone3); border-left: 5px solid var(--red);
+  }
+  .enemy .name { font-size: 15.5px; }
+  .enemy .info { font-size: 12px; color: var(--amate2); }
+  .enemy button {
+    margin-left: auto; color: var(--cream); padding: 8px 12px; font-weight: 800;
+    background: linear-gradient(#cc4a33, var(--red)); border: 2px solid var(--obsidian);
+  }
+  .enemy.won { opacity: .7; border-left-color: var(--gold); }
+  .enemy.won .done { margin-left: auto; color: var(--gold); font-weight: 800; }
+
+  /* things floating on the map */
+  #placeBar {
+    position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+    background: var(--obsidian); border: 3px solid var(--gold); padding: 8px 10px 8px 16px;
+    display: none; align-items: center; gap: 12px; font-size: 15px; max-width: 70%;
+  }
+  #placeBar button { background: linear-gradient(#cc4a33, var(--red)); color: #fff; padding: 6px 12px; font-weight: 800; }
+  #map canvas.placing { cursor: crosshair; }
+
+  .codex {   /* a painted bark-paper note */
+    background:
+      var(--greca) top left / 24px 8px repeat-x,
+      repeating-linear-gradient(8deg, rgba(120,90,50,.08) 0 2px, transparent 2px 7px),
+      linear-gradient(var(--amate), var(--amate2));
+    color: var(--obsidian); border: 3px solid var(--obsidian); padding-top: 14px !important;
+    box-shadow: 4px 4px 0 rgba(0,0,0,.45);
+  }
+  #confirmBox {
+    position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 10;
+    display: none; align-items: center; justify-content: center;
+  }
+  #confirmBox .box { padding: 20px 26px; text-align: center; font-size: 18px; }
+  #confirmBox button { padding: 10px 18px; font-weight: 800; margin: 14px 6px 0; color: #fff; border: 2px solid var(--obsidian); }
+  #yesNew { background: linear-gradient(#cc4a33, var(--red)); }
+  #noNew { background: linear-gradient(#2fa36a, var(--jade)); }
+
+  #sacrifice {
+    position: absolute; left: 12px; bottom: 12px; display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(#2b211c, var(--obsidian)); color: #fff; padding: 8px 14px 8px 8px; font-size: 18px;
+    border: 3px solid var(--red); box-shadow: inset 0 0 14px rgba(178,50,31,.6);
+    font-family: 'Bungee', Impact, sans-serif; font-weight: 400; text-align: left;
+  }
+  #sacrifice .glyph { width: 40px; height: 40px; }
+  #sacrifice small { display: block; font-size: 11px; font-family: 'Nunito', sans-serif; font-weight: 800; color: var(--amate2); }
+
+  #raidBar {
+    position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%);
+    background: var(--greca) top left / 24px 8px repeat-x, linear-gradient(#c8432b, var(--red));
+    color: #fff; border: 3px solid var(--obsidian); padding: 14px 16px 8px;
+    font-size: 15px; display: none; text-align: center; width: max-content; max-width: 92%;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 50% { box-shadow: 0 0 0 6px rgba(242, 177, 52, .55); } }
+  #message {
+    position: absolute; left: 50%; top: 14px; transform: translateX(-50%);
+    padding: 8px 16px; font-size: 16px; display: none; align-items: center; gap: 10px;
+    text-align: left; width: max-content; max-width: 92%;
+  }
+  .msg-glyph { width: 46px; height: 46px; flex-shrink: 0; }
+  .inline-glyph { width: 18px; height: 18px; vertical-align: -3px; margin: 0 1px; }
+  #raidBar .msg-glyph { width: 34px; height: 34px; vertical-align: middle; margin-right: 6px; }
+
+  /* tutorial */
+  #tutBlock { position: fixed; inset: 0; z-index: 20; display: none; }
+  #tutHole {
+    position: fixed; z-index: 21; display: none; pointer-events: none;
+    border: 3px solid var(--gold); box-shadow: 0 0 0 9999px rgba(10, 8, 6, .62), 0 0 18px 4px rgba(242,177,52,.7);
+    transition: all .25s;
+  }
+  #tutBox {
+    position: fixed; z-index: 22; display: none; gap: 12px; align-items: flex-start;
+    width: min(400px, 92vw); padding: 12px 16px 12px 12px; transition: top .25s, left .25s;
+  }
+  #tutBox .msg-glyph { width: 56px; height: 56px; }
+  #tutTitle { font-size: 17px; color: var(--red); margin-bottom: 4px; }
+  #tutText { font-size: 15px; line-height: 1.4; }
+  .tutBtns { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  #tutStep { margin-right: auto; font-size: 12px; color: #6b4a2a; }
+  #tutBox button { padding: 7px 14px; font-weight: 800; color: #fff; border: 2px solid var(--obsidian); }
+  #tutNext { background: linear-gradient(#2fa36a, var(--jade)); }
+  #tutSkip { background: linear-gradient(var(--stone3), var(--stone2)); }
+
+  @media (max-width: 850px) {
+    body { height: auto; min-height: 100vh; }
+    main { flex-direction: column; }
+    #map { height: 50vh; flex: none; border-right: none; border-bottom: 4px solid var(--obsidian); }
+    #side { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 class="title">AZTEC TYCOON</h1>
+  <a href="https://radgamestv.github.io/" target="_top">&larr; Rad Games</a>
+  <div class="stat" id="statCacao"><img class="glyph" data-glyph="cacao" alt=""> <span id="cacao">0</span><small id="rate"></small></div>
+  <div class="stat" id="statPeople"><img class="glyph" data-glyph="people" alt=""> <span id="people">0</span><small id="space"></small></div>
+  <div class="stat faith" id="statFaith" title="Build temples to keep your people faithful! Too many people on small land makes them lose faith. Win battles to get more land."><img class="glyph" data-glyph="faith" alt=""> <div class="bar"><div class="fill" id="faithFill"></div></div> <span id="faith">100%</span><small id="faithNote"></small></div>
+  <div id="soundWrap">
+    <button class="small" id="soundBtn" title="Sound"><img class="glyph" id="soundGlyph" data-glyph="drum" alt="Sound"></button>
+    <div id="soundMenu" class="codex">
+      <div class="soundTitle">Sound</div>
+      <button data-sound="day"><img class="glyph" data-glyph="drum" alt=""> The Day of an Aztec</button>
+      <button data-sound="battle"><img class="glyph" data-glyph="clubs" alt=""> The Aztecs Attack</button>
+      <button data-sound="happy"><img class="glyph" data-glyph="flower" alt=""> Market Day</button>
+      <button data-sound="off"><img class="glyph" data-glyph="drumOff" alt=""> No sound</button>
+    </div>
+  </div>
+  <button class="small" id="helpBtn" title="How to play">?</button>
+  <button class="small" id="newGame">New game</button>
+</header>
+
+<div id="tutBlock"></div>
+<div id="tutHole"></div>
+<div id="tutBox" class="codex">
+  <img class="msg-glyph" id="tutGlyph" alt="">
+  <div>
+    <div class="title" id="tutTitle"></div>
+    <div id="tutText"></div>
+    <div class="tutBtns">
+      <span id="tutStep"></span>
+      <button id="tutSkip">Skip</button>
+      <button id="tutNext">Next</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmBox">
+  <div class="box codex">
+    Start a brand new game?<br><small>Your city will be erased.</small><br>
+    <button id="noNew">Keep playing</button>
+    <button id="yesNew">Yes, start over</button>
+  </div>
+</div>
+
+<main>
+  <div id="map">
+    <canvas id="canvas"></canvas>
+    <div id="message" class="codex"></div>
+    <div id="raidBar"></div>
+    <div id="placeBar"><span id="placeText"></span><button id="stopPlacing">✖ Done</button></div>
+    <button id="sacrifice"><img class="glyph" data-glyph="altar" alt=""><span>SACRIFICE<small>-1 person → +5 cacao, +2 faith</small></span></button>
+  </div>
+  <div id="side">
+    <h2 class="title">Build</h2>
+    <div id="shop"></div>
+    <h2 class="title">Jobs</h2>
+    <div id="jobs">
+      <div class="job">
+        <img class="glyph" data-glyph="farmer" alt="">
+        <div><div class="name">Farmers</div><div class="info" id="farmerInfo"></div></div>
+        <span class="num" id="farmers" style="margin-left:auto">0</span>
+        <div class="btns">
+          <button class="minus" onclick="setJob('farmers', -100)">−100</button>
+          <button class="minus" onclick="setJob('farmers', -10)">−10</button>
+          <button class="minus" onclick="setJob('farmers', -1)">−1</button>
+          <button onclick="setJob('farmers', 1)">+1</button>
+          <button onclick="setJob('farmers', 10)">+10</button>
+          <button onclick="setJob('farmers', 100)">+100</button>
+        </div>
+      </div>
+      <div class="job">
+        <img class="glyph" data-glyph="trader" alt="">
+        <div><div class="name">Traders</div><div class="info" id="traderInfo"></div></div>
+        <span class="num" id="traders" style="margin-left:auto">0</span>
+        <div class="btns">
+          <button class="minus" onclick="setJob('traders', -100)">−100</button>
+          <button class="minus" onclick="setJob('traders', -10)">−10</button>
+          <button class="minus" onclick="setJob('traders', -1)">−1</button>
+          <button onclick="setJob('traders', 1)">+1</button>
+          <button onclick="setJob('traders', 10)">+10</button>
+          <button onclick="setJob('traders', 100)">+100</button>
+        </div>
+      </div>
+      <div class="job">
+        <img class="glyph" data-glyph="warrior" alt="">
+        <div><div class="name">Warriors</div><div class="info" id="warriorInfo">Fight in battles</div></div>
+        <span class="num" id="warriors" style="margin-left:auto">0</span>
+        <div class="btns">
+          <button class="minus" onclick="setJob('warriors', -100)">−100</button>
+          <button class="minus" onclick="setJob('warriors', -10)">−10</button>
+          <button class="minus" onclick="setJob('warriors', -1)">−1</button>
+          <button onclick="setJob('warriors', 1)">+1</button>
+          <button onclick="setJob('warriors', 10)">+10</button>
+          <button onclick="setJob('warriors', 100)">+100</button>
+        </div>
+      </div>
+      <div class="job">
+        <img class="glyph" data-glyph="free" alt="">
+        <div><div class="name">Free people</div><div class="info">Not doing anything</div></div>
+        <span class="num" id="free" style="margin-left:auto">0</span>
+      </div>
+    </div>
+    <h2 class="title">Attack</h2>
+    <div id="enemies"></div>
+  </div>
+</main>
+
+<script>
+/* =========================================================
+   AZTEC TYCOON  ·  Rad Games
+   Grow your empire! Farms make cacao, houses make room for
+   people, temples boost everything. Split your people into
+   farmers (work the farms) and warriors (fight battles).
+   Attack other cities to win more people and cacao.
+   ========================================================= */
+
+
+/* ---------- THINGS YOU CAN BUY ----------
+   To add something new, copy one of these and change it.
+   cost     = starting price (goes up 15% each time you buy one)
+   grow     = (optional) give one thing its own price growth. 1.5 = +50% each time
+   cacao    = cacao per second it makes
+   farmers  = how many farmers can work there (each farmer makes cacao)
+   people   = how many more people can live in your city
+   boost    = makes everything earn more (0.10 = +10%)
+   strength = makes your warriors fight better (0.25 = +25%)
+   faith    = how many people it keeps faithful
+   traders  = how many traders can work there (each trader makes cacao in the daytime)
+   water    = true if it goes on the lake instead of the island
+   light    = (torches) how far the light reaches. Farms in the light work at night!
+   unlock   = (optional) only buyable when this is true. lockText says how to unlock it */
+const SHOP = [
+  { id: 'farm',   name: 'Farm',   icon: '🌳', cost: 10,  farmers: 6, water: true, info: 'Room for 6 farmers' },
+  { id: 'house',  name: 'House',  icon: '🏠', cost: 20,  people: 8,    info: 'Room for 8 more people' },
+  { id: 'temple', name: 'Temple', icon: '🔺', cost: 150, boost: 0.10, faith: 40, info: '+10% cacao, keeps 40 people faithful' },
+  { id: 'training', name: 'Training Ground', icon: '🎯', cost: 50, strength: 0.10, info: 'Warriors fight 10% stronger' },
+  { id: 'market', name: 'Market', icon: '🛒', cost: 120, traders: 8, info: 'Room for 8 traders who earn cacao (not hit by famines)',
+    unlock: () => regionOpen(2), lockText: 'Conquer the Valley of Mexico to unlock' },
+  { id: 'torch',  name: 'Night Torch', icon: '🔥', cost: 40, water: true, light: 70, info: 'Lights up farms near it so they work at night',
+    unlock: () => regionOpen(2), lockText: 'Conquer the Valley of Mexico to unlock' },
+  { id: 'eagle',  name: 'Eagle Warrior House', icon: '🦅', cost: 3000, strength: 0.30, info: 'Trains eagle warriors: +30% warrior strength',
+    unlock: () => regionOpen(2), lockText: 'Conquer the Valley of Mexico to unlock' },
+];
+function isWater(kind) { const item = SHOP.find(i => i.id === kind); return !!(item && item.water); }
+function isUnlocked(item) { return !item.unlock || item.unlock(); }
+/* how much room each kind of thing takes up on the map (width, height) */
+function footprint(kind) { return kind === 'farm' ? [26, 12] : kind === 'torch' ? [10, 8] : kind === 'market' ? [24, 9] : [17, 8]; }
+
+/* ---------- CITIES YOU CAN ATTACK ----------
+   army   = how strong they are
+   loot   = cacao you win
+   region = which group they are in. You have to beat every city in
+            one region before the next region opens up.
+   Your warriors fight their army. Win and some of their army
+   joins your warriors (see JOIN_PART)! Lose and a third of your warriors are lost. */
+const REGIONS = ['', 'Valley of Mexico', 'Faraway Lands'];
+const ENEMIES = [
+  // Region 1: the cities around Lake Texcoco
+  { name: 'Chalco',        army: 10,    loot: 100,    region: 1 },
+  { name: 'Xochimilco',    army: 25,    loot: 300,    region: 1 },
+  { name: 'Coyoacan',      army: 60,    loot: 800,    region: 1 },
+  { name: 'Tlacopan',      army: 140,   loot: 2000,   region: 1 },
+  { name: 'Texcoco',       army: 300,   loot: 5000,   region: 1 },
+  { name: 'Tlatelolco',    army: 450,   loot: 12000,  region: 1 },
+  // Region 2: harder empires far away
+  { name: 'Tlaxcala',      army: 500, loot: 20000,  region: 2 },
+  { name: 'Huexotzinco',   army: 750, loot: 30000,  region: 2 },
+  { name: 'Cholula',       army: 1000, loot: 45000,  region: 2 },
+  { name: 'Mixtec Kingdom',   army: 1400, loot: 65000,  region: 2 },
+  { name: 'Zapotec Kingdom',  army: 1900, loot: 90000,  region: 2 },
+  { name: 'Purépecha Empire', army: 2600, loot: 130000, region: 2 },
+  { name: 'Maya of Mayapan',  army: 3400, loot: 200000, region: 2 },
+  { name: 'Conquistadors',    army: 4500, loot: 300000, region: 2 },
+];
+/* a region opens when every city in the regions before it is yours */
+function regionOpen(region) {
+  return ENEMIES.every((e, i) => e.region >= region || game.conquered.includes(i));
+}
+
+const PRICE_GROWTH = 1.15;   // each one costs 15% more
+const CACAO_PER_FARMER = 0.5; // each farmer working on a farm makes this much
+const CACAO_PER_TRADER = 0.35; // each trader at a market makes this much (daytime only)
+const TORCH_NIGHT_WORK = 0.5;  // farms lit by a torch work at half speed at night
+const SACRIFICE_CACAO = 5;
+/* FAITH: if faith gets low, people work slower and fight weaker.
+   The first few people are faithful on their own. After that you need temples. */
+const FAITHFUL_WITHOUT_TEMPLES = 10;
+/* CROWDING: your starting island comfortably fits this many people.
+   Bigger land (from winning battles) fits more. Too many people = they lose faith! */
+const PEOPLE_PER_LAND = 250;
+const SACRIFICE_FAITH = 2;     // a sacrifice to the gods raises faith a little
+const LAND_GROWTH = 0.12;      // each battle you win makes the island 12% bigger
+const JOIN_PART = [0, 0.35, 0.15]; // part of their army that joins you when you win, for each region
+                                  // (faraway warriors are tougher to win over: only 15% join)
+/* LOSING A BATTLE costs you faith and some of your cacao */
+const LOSE_FAITH = 15;         // faith lost
+const LOSE_CACAO = 0.2;        // 0.2 = lose 20% of your cacao
+/* RAIDS: every so often an enemy city attacks YOU */
+const FIRST_RAID = 180;        // seconds before the first raid
+const RAID_WARNING = 10;       // seconds of warning to get your warriors ready
+/* RANDOM EVENTS: every so often something good or bad happens (see EVENTS below) */
+const FIRST_EVENT = 100;       // seconds before the first event
+/* DAY AND NIGHT: one whole day is DAY_LENGTH seconds. The last part is night.
+   At night the farms stop! */
+const DAY_LENGTH = 120;
+const NIGHT_PART = 0.3;        // 0.3 = the last 30% of each day is night
+const SAVE_NAME = 'radgames_aztec_tycoon_v3';
+
+
+/* ---------- GAME STATE ---------- */
+let game = newGame();
+
+function newGame() {
+  return {
+    cacao: 0,
+    people: 2,
+    extraRoom: 0,               // room you got from conquering cities
+    farmers: 2,                 // people working on farms (you start with 2)
+    warriors: 0,                // people in your army
+    traders: 0,                 // people working at markets
+    faith: 100,                 // 0 to 100
+    tutorialDone: false,        // the tutorial shows until you finish or skip it
+    time: 12,                   // seconds played (for day and night). Starts just after sunrise.
+    nextRaid: FIRST_RAID,       // when the next enemy raid comes
+    nextEvent: FIRST_EVENT,     // when the next random event happens
+    effects: [],                // events that last a while, like a famine
+    owned: { farm: 1, house: 0, temple: 0, training: 0 },   // start with 1 free farm
+    conquered: [],
+    // where everything is on the map (u, v: 0,0 is the middle of the island, 1 is the edge)
+    placed: [{ kind: 'farm', u: 1.25, v: 0.45 }],   // your free starting farm
+  };
+}
+
+
+/* ---------- MATH ---------- */
+function price(item) {
+  return Math.ceil(item.cost * Math.pow(item.grow || PRICE_GROWTH, game.owned[item.id] || 0));
+}
+function room() {
+  let r = 2 + game.extraRoom;
+  for (const item of SHOP) if (item.people) r += item.people * (game.owned[item.id] || 0);
+  return r;
+}
+function boost() {
+  let b = 1;
+  for (const item of SHOP) if (item.boost) b += item.boost * (game.owned[item.id] || 0);
+  return b;
+}
+function strength() {
+  let st = 1;
+  for (const item of SHOP) if (item.strength) st += item.strength * (game.owned[item.id] || 0);
+  return st;
+}
+function armyPower() {
+  return Math.floor(game.warriors * strength() * faithPower());
+}
+/* where faith is heading: 100 if your temples cover everyone, lower if not */
+/* how many people fit on your land before it feels crowded */
+function comfySpace() {
+  // (cities you conquer bring room for the people who join you)
+  return Math.floor(PEOPLE_PER_LAND * landSize() * landSize()) + game.extraRoom;
+}
+function isCrowded() { return Math.floor(game.people) > comfySpace(); }
+
+function faithGoal() {
+  const people = Math.floor(game.people);
+  // temples keep people faithful
+  let covered = FAITHFUL_WITHOUT_TEMPLES;
+  for (const item of SHOP) if (item.faith) covered += item.faith * (game.owned[item.id] || 0);
+  let goal = people <= covered ? 100 : 100 * covered / people;
+  // but if it's too crowded, people lose faith anyway
+  if (isCrowded()) goal = Math.min(goal, 100 * comfySpace() / people);
+  return Math.max(5, goal);
+}
+/* faith 100 = people work at full power, faith 0 = half power */
+function dayPhase() { return (game.time % DAY_LENGTH) / DAY_LENGTH; }   // 0 = sunrise, 1 = next sunrise
+function isNight() { return dayPhase() >= 1 - NIGHT_PART; }
+function dayNumber() { return Math.floor(game.time / DAY_LENGTH) + 1; }
+/* how bright it is: 1 = full day, 0 = night */
+function daylight() {
+  const p = dayPhase(), dayEnd = 1 - NIGHT_PART;
+  if (p >= dayEnd) return 0;
+  return Math.min(1, Math.sin(Math.PI * p / dayEnd) * 3);
+}
+function faithPower() {
+  return 0.5 + 0.5 * game.faith / 100;
+}
+function freePeople() {
+  return Math.max(0, Math.floor(game.people) - game.farmers - game.warriors - game.traders);
+}
+function traderSpots() {
+  let spots = 0;
+  for (const item of SHOP) if (item.traders) spots += item.traders * (game.owned[item.id] || 0);
+  return spots;
+}
+/* which part of your farms is lit up by torches (0 = none, 1 = all) */
+function litPart() {
+  const farms = game.placed.filter(p => p.kind === 'farm');
+  const torches = game.placed.filter(p => p.kind === 'torch');
+  if (!farms.length || !torches.length) return 0;
+  const g = layout(), reach = SHOP.find(i => i.id === 'torch').light * g.s;
+  const lit = farms.filter(f => torches.some(t => Math.hypot((t.u - f.u) * g.rx, (t.v - f.v) * g.ry) < reach));
+  return lit.length / farms.length;
+}
+function farmIsLit(f, torches, g, reach) {
+  return torches.some(t => Math.hypot((t.u - f.u) * g.rx, (t.v - f.v) * g.ry) < reach);
+}
+function farmerSpots() {
+  let spots = 0;
+  for (const item of SHOP) if (item.farmers) spots += item.farmers * (game.owned[item.id] || 0);
+  return spots;
+}
+function cacaoPerSecond() {
+  // farmers make cacao in the day. At night the farms stop, unless a torch lights them.
+  // Free people don't make anything!
+  let farms = Math.min(game.farmers, farmerSpots()) * CACAO_PER_FARMER * farmEffect();
+  if (isNight()) farms *= litPart() * TORCH_NIGHT_WORK;
+  // traders at the markets work in the day and go home at night
+  const traders = isNight() ? 0 : Math.min(game.traders, traderSpots()) * CACAO_PER_TRADER;
+  let other = 0;
+  for (const item of SHOP) if (item.cacao) other += item.cacao * (game.owned[item.id] || 0);
+  return (farms + traders + other) * boost() * faithPower();
+}
+function winChance(enemy) {
+  const me = armyPower();
+  return me === 0 ? 0 : me / (me + enemy.army);
+}
+function short(n) {
+  n = Math.floor(n);
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e4) return (n / 1e3).toFixed(1) + 'K';
+  return String(n);
+}
+
+
+/* ---------- ACTIONS ---------- */
+/* ---------- PLACING BUILDINGS ----------
+   Click something in the shop, then click the map to put it there.
+   Farms go on the lake. Everything else goes on the island.      */
+let placing = null;   // the id of what you are placing, or null
+
+function buy(id) {
+  const item = SHOP.find(i => i.id === id);
+  if (placing === id) { stopPlacing(); return; }   // click again to stop
+  if (!isUnlocked(item)) { message(item.lockText, 3, 'lock'); return; }
+  if (game.cacao < price(item)) return;
+  placing = id;
+  const where = item.water ? 'on the lake' : 'on the island';
+  document.getElementById('placeText').innerHTML = (glyph(id) ? `<img class="inline-glyph" style="width:28px;height:28px;vertical-align:middle" src="${glyph(id)}" alt=""> ` : '') + `Click ${where} to place your ${item.name}`;
+  document.getElementById('placeBar').style.display = 'flex';
+  canvas.classList.add('placing');
+  drawShop();
+}
+
+function stopPlacing() {
+  placing = null;
+  document.getElementById('placeBar').style.display = 'none';
+  canvas.classList.remove('placing');
+  drawShop();
+}
+
+function canPlace(kind, u, v) {
+  const g = layout();
+  const x = g.cx + u * g.rx, y = g.cy + v * g.ry;
+  const land = landSize() ** 2;
+  const d = u * u + v * v;
+  if (isWater(kind)) {
+    if (d < 1.12 * land) return false;                            // not on the island
+    if (y < g.horizon + 12 || y > H - 6 || x < 14 || x > W - 14) return false;
+  } else if (d > 0.8 * land) return false;                        // must be on the island
+  // don't stack things on top of each other
+  const [w1, h1] = footprint(kind);
+  for (const p of game.placed) {
+    if (isWater(p.kind) !== isWater(kind)) continue;
+    const [w2, h2] = footprint(p.kind);
+    const dx = (g.cx + p.u * g.rx) - x, dy = (g.cy + p.v * g.ry) - y;
+    if ((dx / ((w1 + w2) / 2 * g.s)) ** 2 + (dy / ((h1 + h2) / 2 * g.s)) ** 2 < 1) return false;
+  }
+  return true;
+}
+
+function placeAt(x, y) {
+  if (!placing) return;
+  const g = layout();
+  const u = (x - g.cx) / g.rx, v = (y - g.cy) / g.ry;
+  const item = SHOP.find(i => i.id === placing);
+  if (!canPlace(placing, u, v)) { message(item.water ? `The ${item.name} goes on the lake (and not on top of something)!` : 'That has to go on the island (and not on top of something)', 3, placing); return; }
+  const p = price(item);
+  if (game.cacao < p) { message('Not enough cacao!', 3, 'cacao'); stopPlacing(); return; }
+  game.cacao -= p;
+  game.owned[placing] = (game.owned[placing] || 0) + 1;
+  game.placed.push({ kind: placing, u, v });
+  popups.push({ parts: [['-' + short(p), 'cacao']], x, y: y - 20, life: 1 });
+  if (game.cacao < price(item)) stopPlacing(); else drawShop();
+}
+
+/* move people into or out of a job (change can be + or -) */
+function setJob(job, change) {
+  if (change > 0) {
+    change = Math.min(change, freePeople());
+    if (job === 'farmers') change = Math.min(change, farmerSpots() - game.farmers); // farms can only hold so many
+    if (job === 'traders') change = Math.min(change, traderSpots() - game.traders); // markets too
+  } else {
+    change = Math.max(change, -game[job]);
+  }
+  game[job] += change;
+  updateNumbers();
+}
+
+/* if people leave, take them out of jobs (free people go first) */
+function fixJobs() {
+  let tooMany = game.farmers + game.traders + game.warriors - Math.floor(game.people);
+  for (const job of ['farmers', 'traders', 'warriors']) {
+    if (tooMany <= 0) return;
+    const take = Math.min(tooMany, game[job]);
+    game[job] -= take; tooMany -= take;
+  }
+}
+
+function sacrifice() {
+  if (game.people < 2) return;
+  game.people -= 1;
+  game.cacao += SACRIFICE_CACAO;
+  game.faith = Math.min(100, game.faith + SACRIFICE_FAITH);
+  fixJobs();
+  popups.push({ parts: [['+5', 'cacao'], ['-1', 'people'], ['+2', 'faith']], x: 150, y: H - 80, life: 1 });
+}
+
+function attack(index) {
+  const enemy = ENEMIES[index];
+  if (game.conquered.includes(index) || !regionOpen(enemy.region)) return;
+  if (game.warriors < 1) { message('You need warriors! Add some in Jobs.', 3, 'warrior'); return; }
+  if (Math.random() < winChance(enemy)) {
+    const joined = Math.floor(enemy.army * JOIN_PART[enemy.region]);
+    game.people += joined;
+    game.warriors += joined;
+    game.extraRoom += joined;
+    game.cacao += enemy.loot;
+    game.conquered.push(index);
+    growLand();
+    message(`You conquered ${enemy.name}! +${joined} {warrior} warriors, +${short(enemy.loot)} {cacao}, and your land grew!`, 4, 'conquest');
+    if (game.conquered.length === ENEMIES.length) {
+      setTimeout(() => message('You beat everyone! You rule all of Mesoamerica!', 6, 'crown'), 4000);
+    } else if (ENEMIES.filter(e => e.region === enemy.region).every(e => game.conquered.includes(ENEMIES.indexOf(e)))) {
+      setTimeout(() => message(`You rule the ${REGIONS[enemy.region]}! New enemies are ready to fight!`, 5, 'crown'), 4000);
+    }
+  } else {
+    const lost = Math.ceil(game.warriors / 3);
+    const lostCacao = Math.floor(game.cacao * LOSE_CACAO);
+    game.warriors -= lost;
+    game.people -= lost;
+    game.cacao -= lostCacao;
+    game.faith = Math.max(0, game.faith - LOSE_FAITH);
+    message(`${enemy.name} won the battle. You lost ${lost} {warrior}, ${short(lostCacao)} {cacao} and ${LOSE_FAITH} {faith}`, 4, 'skull');
+  }
+  drawEnemies();
+}
+
+/* the island got bigger! push any farms that are now on land back out into the lake */
+function growLand() { fixFarms(); }
+
+/* Keeps every farm on the lake: not under the island and not off the screen.
+   Any farm in a bad spot slides along the shore to the closest open spot. */
+function fixFarms() {
+  const land = landSize();
+  const g = layoutFor(land);
+  const farms = game.placed.filter(p => isWater(p.kind));   // farms and torches
+  const goodSpot = (p) => {
+    if (p.u * p.u + p.v * p.v < 1.15 * land * land) return false;          // under the island
+    const x = g.cx + p.u * g.rx, y = g.cy + p.v * g.ry;
+    return x > 16 * g.s && x < W - 16 * g.s && y > g.horizon + 10 * g.s && y < H - 8 * g.s;   // on screen
+  };
+  const bumps = (p, me) => farms.some(o => {
+    if (o === me) return false;
+    const [w1, h1] = footprint(me.kind), [w2, h2] = footprint(o.kind);
+    return ((o.u - p.u) * g.rx / ((w1 + w2) / 2 * g.s)) ** 2 + ((o.v - p.v) * g.ry / ((h1 + h2) / 2 * g.s)) ** 2 < 1;
+  });
+  for (const p of farms) {
+    if (goodSpot(p) && !bumps(p, p)) continue;
+    const start = Math.atan2(p.v, p.u);
+    let moved = false;
+    for (let ring = 0; ring < 15 && !moved; ring++) {          // try close to the shore first, then further out
+      const r = Math.sqrt(1.18) * land + ring * 0.1;
+      for (let step = 0; step < 130 && !moved; step++) {         // then slide left and right around the lake
+        const a = start + (step % 2 ? 1 : -1) * Math.ceil(step / 2) * 0.05;
+        const spot = { u: Math.cos(a) * r, v: Math.sin(a) * r };
+        if (goodSpot(spot) && !bumps(spot, p)) { p.u = spot.u; p.v = spot.v; moved = true; }
+      }
+    }
+  }
+}
+
+/* ---------- RAIDS ---------- */
+let raid = null;   // { name, army, at } when someone is coming to attack
+
+function startRaid() {
+  const left = ENEMIES.filter((e, i) => !game.conquered.includes(i) && regionOpen(e.region));
+  let name, army;
+  if (left.length) {
+    // one of the two weakest cities you haven't beaten sends a raiding party
+    const enemy = left[Math.floor(Math.random() * Math.min(2, left.length))];
+    name = enemy.name;
+    army = Math.max(3, Math.ceil(enemy.army * (0.3 + Math.random() * 0.4)));
+  } else {
+    name = 'Rebels';
+    army = Math.max(10, Math.ceil(game.people * 0.15));
+  }
+  raid = { name, army, at: game.time + RAID_WARNING };
+}
+
+function finishRaid() {
+  const power = armyPower();
+  const chance = power === 0 ? 0 : power / (power + raid.army);
+  if (Math.random() < chance) {
+    const loot = raid.army * 5;
+    game.cacao += loot;
+    game.faith = Math.min(100, game.faith + 5);
+    message(`Your warriors drove off ${raid.name}! +${short(loot)} {cacao} +5 {faith}`, 4, 'shield');
+  } else {
+    const lost = Math.ceil(game.warriors / 2);
+    const lostCacao = Math.floor(game.cacao * LOSE_CACAO);
+    game.warriors -= lost;
+    game.people -= lost;
+    game.cacao -= lostCacao;
+    game.faith = Math.max(0, game.faith - LOSE_FAITH);
+    message(`${raid.name} raided your city! You lost ${short(lostCacao)} {cacao} and ${LOSE_FAITH} {faith}` + (lost ? ` and ${lost} {warrior}` : ''), 4, 'conquest');
+  }
+  raid = null;
+  game.nextRaid = game.time + 90 + Math.random() * 90;   // next raid in 1.5 to 3 minutes
+  drawEnemies();
+}
+
+function updateRaid() {
+  const bar = document.getElementById('raidBar');
+  if (!raid && game.time >= game.nextRaid) startRaid();
+  if (raid) {
+    const secs = Math.ceil(raid.at - game.time);
+    const power = armyPower();
+    const chance = power === 0 ? 0 : Math.round(power / (power + raid.army) * 100);
+    bar.innerHTML = `<img class="msg-glyph" src="${glyph('war')}" alt=""><b>${raid.name}</b> is coming to attack with ${raid.army} warriors in ${secs}s! Your chance to win: ${chance}%`;
+    bar.style.display = 'block';
+    if (game.time >= raid.at) finishRaid();
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+let messageTimer;
+/* Shows a message on a bark-paper note with an Aztec picture.
+   In the text, {cacao} {faith} {people} {warrior} become little pictures too. */
+function glyphText(text) {
+  return text.replace(/\{(\w+)\}/g, (all, kind) => glyph(kind) ? `<img class="inline-glyph" src="${glyph(kind)}" alt="${kind}">` : all);
+}
+function message(text, seconds = 3, icon = null) {
+  const box = document.getElementById('message');
+  box.innerHTML = (icon && glyph(icon) ? `<img class="msg-glyph" src="${glyph(icon)}" alt="">` : '') + `<span>${glyphText(text)}</span>`;
+  box.style.display = 'flex';
+  clearTimeout(messageTimer);
+  messageTimer = setTimeout(() => box.style.display = 'none', seconds * 1000);
+}
+
+/* ---------- RANDOM EVENTS ----------
+   To add a new event, copy one and change it.
+   good  = true for good events, false for bad ones
+   when  = (optional) only happens if this is true
+   icon  = the picture shown with the message (see glyph() for the pictures)
+   run   = what happens. Return the message to show.
+   addEffect(name, farms, seconds) makes farms earn more or less for a while
+   (farms: 0.5 = half as much, 2 = double).                                 */
+const EVENTS = [
+  { name: 'Famine', icon: 'famine', good: false, run() {
+      addEffect('Famine', 0.5, 120, 'famine');
+      return 'FAMINE! The crops are failing. Farms make half as much for 2 minutes.';
+  }},
+  { name: 'Civil War', icon: 'clubs', good: false, when: () => game.people >= 20, run() {
+      const rebels = Math.ceil(freePeople() * 0.3 + game.farmers * 0.1);
+      const power = armyPower();
+      const stopped = Math.round(rebels * (power / (power + rebels * 2)));
+      const left = rebels - stopped;
+      game.people -= left;
+      game.faith = Math.max(0, game.faith - 10);
+      fixJobs();
+      return `CIVIL WAR! ${rebels} people revolted. Your warriors stopped ${stopped}, but ${left} left the city. -10 {faith}`;
+  }},
+  { name: 'Brave Priest', icon: 'altar', good: true, when: () => game.people >= 5, run() {
+      game.people -= 1;
+      game.faith = Math.min(100, game.faith + 25);
+      fixJobs();
+      return 'A brave priest gave himself to the gods! Your people are inspired. +25 {faith}';
+  }},
+  { name: 'Rain from Tlaloc', icon: 'rain', good: true, run() {
+      addEffect('Tlaloc\'s Rain', 1.5, 120, 'rain');
+      return 'Tlaloc, god of rain, sends perfect weather! Farms make 50% more for 2 minutes.';
+  }},
+  { name: 'Great Harvest', icon: 'harvest', good: true, run() {
+      addEffect('Great Harvest', 2, 60, 'harvest');
+      return 'GREAT HARVEST! Farms make double for 1 minute!';
+  }},
+  { name: 'Traders', icon: 'trader', good: true, run() {
+      const gift = Math.floor(50 + cacaoPerSecond() * 30);
+      game.cacao += gift;
+      return `Traders from the south came to your market! +${short(gift)} {cacao}`;
+  }},
+  { name: 'Newcomers', icon: 'people', good: true, when: () => room() > game.people, run() {
+      const n = Math.min(Math.ceil(room() - game.people), 5 + Math.floor(Math.random() * 10));
+      game.people += n;
+      return `${n} new people moved to your city!`;
+  }},
+  { name: 'Plague', icon: 'skull', good: false, when: () => game.people >= 20, run() {
+      const sick = Math.ceil(game.people * 0.08);
+      game.people -= sick;
+      fixJobs();
+      return `A sickness spread through the city. ${sick} people were lost.`;
+  }},
+  { name: 'Earthquake', icon: 'ollin', good: false, when: () => game.placed.some(p => p.kind !== 'farm'), run() {
+      const buildings = game.placed.filter(p => p.kind !== 'farm');
+      const hit = buildings[Math.floor(Math.random() * buildings.length)];
+      game.placed.splice(game.placed.indexOf(hit), 1);
+      game.owned[hit.kind]--;
+      const name = SHOP.find(i => i.id === hit.kind).name;
+      drawShop();
+      return `EARTHQUAKE! A ${name} fell down.`;
+  }},
+  { name: 'Festival', icon: 'flower', good: true, run() {
+      game.faith = Math.min(100, game.faith + 15);
+      return 'A festival for the gods! Everyone is happy. +15 {faith}';
+  }},
+];
+
+function addEffect(name, farms, seconds, icon) {
+  game.effects = game.effects.filter(e => e.name !== name);
+  game.effects.push({ name, farms, icon, until: game.time + seconds });
+}
+function farmEffect() {
+  let m = 1;
+  for (const e of game.effects) m *= e.farms;
+  return m;
+}
+function updateEvents() {
+  game.effects = game.effects.filter(e => e.until > game.time);
+  if (game.time < game.nextEvent || raid) return;
+  const possible = EVENTS.filter(e => !e.when || e.when());
+  const event = possible[Math.floor(Math.random() * possible.length)];
+  message(event.run(), 7, event.icon);
+  game.nextEvent = game.time + 100 + Math.random() * 80;   // next one in about 2 to 3 minutes
+}
+
+
+/* ---------- SIDE PANEL ---------- */
+let lastLockSig = '';
+function drawShop() {
+  document.getElementById('shop').innerHTML = SHOP.map(item => !isUnlocked(item) ? `
+    <button class="buy locked" disabled>
+      <img class="glyph" src="${glyph('lock')}" alt="Locked">
+      <span><div class="name">${item.name}</div><div class="info">${item.lockText}</div></span>
+    </button>` : `
+    <button class="buy ${placing === item.id ? 'placing' : ''}" data-id="${item.id}" onclick="buy('${item.id}')">
+      ${glyph(item.id) ? `<img class="glyph" src="${glyph(item.id)}" alt="">` : `<span class="glyph" style="font-size:34px">${item.icon}</span>`}
+      <span>
+        <div class="name">${item.name} · <span class="price"><img src="${glyph('cacao')}" style="width:16px;height:16px;vertical-align:-2px" alt="">${short(price(item))}</span></div>
+        <div class="info">${item.info}</div>
+      </span>
+      <span class="count">${game.owned[item.id] || 0}</span>
+    </button>`).join('');
+}
+
+function drawEnemies() {
+  let html = '';
+  ENEMIES.forEach((enemy, i) => {
+    if (i === 0 || ENEMIES[i - 1].region !== enemy.region) {
+      html += `<div class="region">${regionOpen(enemy.region) ? '' : `<img src="${glyph('lock')}" style="width:20px;height:20px" alt="Locked">`}${REGIONS[enemy.region]}</div>`;
+      if (!regionOpen(enemy.region)) html += `<div class="info locked">Beat every city above to unlock these harder enemies!</div>`;
+    }
+    if (game.conquered.includes(i)) {
+      html += `<div class="enemy won"><div class="name">${enemy.name}</div><span class="done">✔ Yours</span></div>`;
+    } else if (!regionOpen(enemy.region)) {
+      html += `<div class="enemy won"><div class="name">${enemy.name}</div><span class="done" style="color:#d8c4a0">Army ${short(enemy.army)}</span></div>`;
+    } else {
+      html += `<div class="enemy">
+        <div>
+          <div class="name">${enemy.name}</div>
+          <div class="info">Army ${short(enemy.army)} · Loot ${glyphText('{cacao}')}${short(enemy.loot)} · <span class="chance" data-i="${i}"></span></div>
+        </div>
+        <button onclick="attack(${i})">Attack</button>
+      </div>`;
+    }
+  });
+  document.getElementById('enemies').innerHTML = html;
+}
+
+function updateNumbers() {
+  document.getElementById('cacao').textContent = short(game.cacao);
+  const cps = cacaoPerSecond();
+  document.getElementById('rate').textContent = isNight() && cps === 0 ? 'night: everyone is sleeping' : '+' + cps.toFixed(1) + '/s' + (isNight() ? ' at night' : '');
+  const f = Math.round(game.faith);
+  const fill = document.getElementById('faithFill');
+  fill.style.width = f + '%';
+  fill.style.background = f >= 70 ? '#6aa84f' : f >= 40 ? '#f2b134' : '#c0392b';
+  document.getElementById('faith').textContent = f + '%';
+  document.getElementById('faithNote').textContent =
+    isCrowded() ? '😣 too crowded! need more land'
+    : faithGoal() < game.faith - 0.5 ? 'dropping! build temples'
+    : f < 100 ? `working at ${Math.round(faithPower() * 100)}%` : '';
+  document.getElementById('people').textContent = Math.floor(game.people);
+  document.getElementById('space').textContent = 'room for ' + room();
+  document.getElementById('sacrifice').disabled = game.people < 2;
+  document.getElementById('farmers').textContent = game.farmers;
+  document.getElementById('warriors').textContent = game.warriors;
+  document.getElementById('free').textContent = freePeople();
+  document.getElementById('traders').textContent = game.traders;
+  const traderRoom = traderSpots() - game.traders;
+  document.getElementById('traderInfo').textContent = !isUnlocked(SHOP.find(i => i.id === 'market')) ? 'Markets unlock after the Valley of Mexico' : traderSpots() === 0 ? 'Build a Market first' : traderRoom > 0 ? `Markets have room for ${traderRoom} more` : 'Markets are full. Build more!';
+  document.getElementById('warriorInfo').textContent = `Army power: ${armyPower()}`;
+  const openSpots = farmerSpots() - game.farmers;
+  const farmerInfo = document.getElementById('farmerInfo');
+  farmerInfo.textContent = openSpots > 0 ? `Farms have room for ${openSpots} more` : 'Farms are full. Build more!';
+  farmerInfo.className = 'info' + (openSpots > 0 && freePeople() > 0 ? ' warn' : '');
+  const lockSig = SHOP.map(isUnlocked).join();
+  if (lockSig !== lastLockSig) { lastLockSig = lockSig; drawShop(); }
+  document.querySelectorAll('.buy[data-id]').forEach(btn => {
+    const item = SHOP.find(i => i.id === btn.dataset.id);
+    btn.disabled = game.cacao < price(item);
+  });
+  document.querySelectorAll('.chance').forEach(el => {
+    el.textContent = Math.round(winChance(ENEMIES[el.dataset.i]) * 100) + '% to win';
+  });
+}
+
+
+/* ---------- THE MAP ---------- */
+const canvas = document.getElementById('canvas');
+let ctx = canvas.getContext('2d');   // (let, so icons can borrow the drawing code)
+let W = 800, H = 500;
+const popups = [];
+const mouse = { x: 0, y: 0, over: false };
+
+/* where the island is, so drawing and clicking agree */
+function layout() {
+  return layoutFor(typeof shownLand === 'number' ? shownLand : 1);
+}
+function layoutFor(land) {
+  // as your land grows, the camera zooms out a little so everything stays on screen
+  const zoom = Math.pow(land, 0.75);
+  return {
+    horizon: H * 0.35, cx: W / 2, cy: H * 0.66,
+    rx: Math.min(W * 0.30, H * 0.48) / zoom, ry: H * 0.16 / zoom, s: Math.min(W / 800, H / 500) / zoom,
+  };
+}
+
+/* how big your island is: starts at 1 and grows when you win battles */
+function landSize() { return 1 + LAND_GROWTH * game.conquered.length; }
+let shownLand = 1;   // grows smoothly toward landSize() so you can watch it
+
+canvas.addEventListener('pointermove', e => {
+  const r = canvas.getBoundingClientRect();
+  mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.over = true;
+});
+canvas.addEventListener('pointerleave', () => mouse.over = false);
+canvas.addEventListener('pointerdown', e => {
+  const r = canvas.getBoundingClientRect();
+  mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top;
+  if (e.button === 2) { stopPlacing(); return; }
+  placeAt(mouse.x, mouse.y);
+});
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => { if (e.key === 'Escape') stopPlacing(); });
+
+function resize() {
+  const box = canvas.parentElement.getBoundingClientRect();
+  W = box.width; H = box.height;
+  canvas.width = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+new ResizeObserver(resize).observe(canvas.parentElement);
+resize();
+
+/* the same "random" spots every game, so buildings don't jump around */
+function mixColor(a, b, t) {
+  const pa = [1, 3, 5].map(i => parseInt(a.slice(i, i + 2), 16));
+  const pb = [1, 3, 5].map(i => parseInt(b.slice(i, i + 2), 16));
+  return '#' + pa.map((v, i) => Math.round(v + (pb[i] - v) * t).toString(16).padStart(2, '0')).join('');
+}
+function seeded(seed) { return () => (seed = (seed * 16807) % 2147483647) / 2147483647; }
+const spots = [];
+{
+  const r = seeded(42);
+  for (let gap of [0.16, 0.11, 0.07]) {
+    for (let t = 0; t < 6000; t++) {
+      const u = r() * 2 - 1, v = r() * 2 - 1;
+      if (u * u + v * v > 0.75) continue;
+      if (spots.some(s => Math.hypot(s.u - u, s.v - v) < gap)) continue;
+      spots.push({ u, v });
+    }
+  }
+}
+
+function drawMap() {
+  const { horizon, cx, cy, rx, ry, s } = layout();
+
+  // sky changes color with the time of day
+  const light = daylight(), phase = dayPhase(), dayEnd = 1 - NIGHT_PART;
+  const sunset = light > 0 && light < 1 ? 1 - light : 0;
+  ctx.fillStyle = mixColor(mixColor('#0e1440', '#8fd3f4', light), '#ff9a5a', sunset * 0.6);
+  ctx.fillRect(0, 0, W, horizon);
+  if (light < 0.5) {   // stars
+    ctx.fillStyle = `rgba(255,255,255,${1 - light * 2})`;
+    const r = seeded(7);
+    for (let i = 0; i < 60; i++) ctx.fillRect(r() * W, r() * horizon * 0.9, 2, 2);
+  }
+  if (phase < dayEnd) {   // the sun moves across the sky
+    const t = phase / dayEnd;
+    drawSun(W * t, horizon - Math.sin(Math.PI * t) * horizon * 0.8, 20 * Math.max(s, 0.7));
+  } else {                // then the moon
+    const t = (phase - dayEnd) / NIGHT_PART;
+    const mx = W * t, my = horizon - Math.sin(Math.PI * t) * horizon * 0.75;
+    ctx.fillStyle = '#f4f1de'; ctx.beginPath(); ctx.arc(mx, my, 16 * s, 0, 7); ctx.fill();
+    ctx.fillStyle = '#0e1440'; ctx.beginPath(); ctx.arc(mx + 7 * s, my - 4 * s, 14 * s, 0, 7); ctx.fill();
+  }
+  // the two volcanoes: Iztaccihuatl (left) and Popocatepetl (right, smoking)
+  // (mountainHeight() matches this shape)
+  ctx.fillStyle = '#8a79a8';
+  ctx.beginPath(); ctx.moveTo(0, horizon); ctx.lineTo(W * 0.25, horizon - H * 0.14); ctx.lineTo(W * 0.5, horizon);
+  ctx.lineTo(W * 0.75, horizon - H * 0.2); ctx.lineTo(W, horizon); ctx.closePath(); ctx.fill(); outline(2);
+  ctx.fillStyle = '#fbf7ee';
+  for (const [px, ph] of [[0.25, 0.14], [0.75, 0.2]]) {
+    const x0 = W * px, y0 = horizon - H * ph, dx = W * 0.25 * 0.28, dy = H * ph * 0.28;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + dx, y0 + dy); ctx.lineTo(x0 + dx * 0.4, y0 + dy * 0.75);
+    ctx.lineTo(x0, y0 + dy); ctx.lineTo(x0 - dx * 0.5, y0 + dy * 0.7); ctx.lineTo(x0 - dx, y0 + dy); ctx.closePath(); ctx.fill(); outline(1.5);
+  }
+  for (let i = 0; i < 4; i++) {   // smoke puffs
+    const t = (game.time * 0.05 + i / 4) % 1;
+    ctx.fillStyle = `rgba(240,236,228,${0.8 * (1 - t)})`;
+    ctx.beginPath(); ctx.arc(W * 0.75 + t * W * 0.05, horizon - H * 0.2 - 8 - t * H * 0.1, (5 + t * 12) * Math.max(s, 0.7), 0, 7); ctx.fill();
+  }
+  // Lake Texcoco, with codex-style curly waves
+  ctx.fillStyle = '#2fae9f'; ctx.fillRect(0, horizon, W, H - horizon);
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2;
+  for (let row = 0, yy = horizon + 18; yy < H; row++, yy += 30) {
+    const shift = (game.time * 6 + row * 20) % 46;
+    for (let xx = -46 + shift; xx < W + 46; xx += 46) {
+      ctx.beginPath(); ctx.arc(xx, yy, 6, Math.PI, Math.PI * 1.9); ctx.stroke();
+      ctx.beginPath(); ctx.arc(xx + 4, yy - 1, 2, 0, 7); ctx.stroke();
+    }
+  }
+  ctx.fillStyle = '#5f9a3a'; ctx.fillRect(0, horizon - 4, W, 10);
+  ctx.fillStyle = INK; ctx.fillRect(0, horizon + 5, W, 2);
+
+  // enemy cities on the far shore
+  // (region 1 sits on the shore, faraway lands are smaller up in the hills)
+  ENEMIES.forEach((enemy, i) => {
+    const group = ENEMIES.filter(e => e.region === enemy.region);
+    const k = group.indexOf(enemy), far = enemy.region > 1;
+    let x, y;
+    if (!far) {
+      x = W * (0.07 + k * 0.86 / group.length);
+      y = horizon + 2;
+    } else {
+      // half the faraway cities on the left mountain, half on the right one
+      const half = Math.ceil(group.length / 2), left = k < half;
+      const n = left ? half : group.length - half, j = left ? k : k - half;
+      x = W * ((left ? 0.09 : 0.59) + (j + 0.5) * 0.32 / n);
+      y = horizon - mountainHeight(x) * 0.6;   // sit on the mountainside
+    }
+    const ts = Math.max(far ? 0.55 : 0.8, (far ? 0.6 : 1) * s);
+    drawTown(x, y, ts, game.conquered.includes(i) ? '#f2b134' : regionOpen(enemy.region) ? '#b2321f' : '#8a8a8a');
+  });
+
+  // farms float on the lake
+  for (const p of game.placed) if (p.kind === 'farm') drawFarm(cx + p.u * rx, cy + p.v * ry, s);
+  for (const p of game.placed) if (p.kind === 'torch') drawTorch(cx + p.u * rx, cy + p.v * ry, s);
+
+  // island
+  const L = shownLand;
+  ctx.fillStyle = '#e2c98f'; ctx.beginPath(); ctx.ellipse(cx, cy, rx * L, ry * L, 0, 0, 7); ctx.fill(); outline(2.5);
+  ctx.fillStyle = '#8fc25a'; ctx.beginPath(); ctx.ellipse(cx, cy, rx * L * 0.93, ry * L * 0.88, 0, 0, 7); ctx.fill();
+  drawEagleOnCactus(cx, cy + ry * L * 0.1, s);
+
+  // houses and temples sit on the island
+  const placed = game.placed.filter(p => !isWater(p.kind))
+    .map(p => ({ kind: p.kind, x: cx + p.u * rx, y: cy + p.v * ry }));
+  // give the walkers jobs to match your city (warriors first, then farmers, then traders)
+  const total = Math.max(1, Math.floor(game.people));
+  const showWarriors = Math.round(walkers.length * game.warriors / total);
+  const showFarmers = Math.round(walkers.length * game.farmers / total);
+  const showTraders = Math.round(walkers.length * game.traders / total);
+  const eagles = (game.owned.eagle || 0) > 0;
+  walkers.forEach((w, i) => {
+    w.job = i < showWarriors ? (eagles && i % 2 ? 'eagle' : 'warrior')
+      : i < showWarriors + showFarmers ? 'farmer'
+      : i < showWarriors + showFarmers + showTraders ? 'trader' : 'free';
+    if (!w.inside) placed.push({ kind: 'person', x: cx + w.u * rx, y: cy + w.v * ry, w });   // (people inside their house are hidden)
+  });
+  placed.sort((a, b) => a.y - b.y);  // draw back to front
+  for (const p of placed) {
+    if (p.kind === 'house') drawHouse(p.x, p.y, s);
+    else if (p.kind === 'temple') drawTemple(p.x, p.y, s);
+    else if (p.kind === 'person') drawPerson(p.x, p.y, s, p.w);
+    else drawThing(p.kind, p.x, p.y, s);
+  }
+
+  // darken everything at night, then light up the windows and temple fires
+  if (light < 1) {
+    ctx.fillStyle = `rgba(10, 15, 60, ${0.5 * (1 - light)})`;
+    ctx.fillRect(0, 0, W, H);
+    if (light < 0.4) {
+      for (const p of placed) {
+        if (p.kind === 'house') { ctx.fillStyle = '#ffb347'; ctx.fillRect(p.x - 2 * s, p.y - 8 * s, 4 * s, 6 * s); }
+        if (p.kind === 'eagle') { ctx.fillStyle = '#ffb347'; ctx.fillRect(p.x - 2 * s, p.y - 12 * s, 4 * s, 6 * s); }
+        if (p.kind === 'temple') {
+          ctx.fillStyle = 'rgba(255,160,60,0.35)'; ctx.beginPath(); ctx.arc(p.x, p.y - 33 * s, 10 * s, 0, 7); ctx.fill();
+          ctx.fillStyle = '#ff9a2a'; ctx.beginPath(); ctx.ellipse(p.x, p.y - 34 * s, 2.5 * s, 4 * s, 0, 0, 7); ctx.fill();
+        }
+      }
+    }
+  }
+  // torches light up the lake at night: farms in the light keep working
+  if (light < 1) {
+    const torches = game.placed.filter(p => p.kind === 'torch');
+    const reach = SHOP.find(i => i.id === 'torch').light * s;
+    const g = layout();
+    for (const f of game.placed) {
+      if (f.kind === 'farm' && farmIsLit(f, torches, g, reach)) drawFarm(cx + f.u * rx, cy + f.v * ry, s);
+    }
+    for (const t of torches) {
+      const tx = cx + t.u * rx, ty = cy + t.v * ry;
+      const glow = ctx.createRadialGradient(tx, ty, 0, tx, ty, reach);
+      glow.addColorStop(0, `rgba(255,170,60,${0.35 * (1 - light)})`); glow.addColorStop(1, 'rgba(255,170,60,0)');
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(tx, ty, reach, 0, 7); ctx.fill();
+      drawTorch(tx, ty, s);
+    }
+  }
+  // which day it is
+  ctx.font = '15px Bungee, Impact, sans-serif';
+  ctx.textAlign = 'left';
+  const dayText = (isNight() ? 'NIGHT ' : 'DAY ') + dayNumber();
+  ctx.fillStyle = 'rgba(26,20,18,0.85)'; ctx.fillRect(10, 10, ctx.measureText(dayText).width + 50, 32);
+  ctx.strokeStyle = '#f2b134'; ctx.lineWidth = 2; ctx.strokeRect(10, 10, ctx.measureText(dayText).width + 50, 32);
+  if (isNight()) { ctx.fillStyle = '#f4f1de'; ctx.beginPath(); ctx.arc(28, 26, 8, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(26,20,18,1)'; ctx.beginPath(); ctx.arc(32, 23, 7, 0, 7); ctx.fill(); }
+  else drawSun(28, 26, 6.5);
+  ctx.fillStyle = '#fff4dc';
+  ctx.fillText(dayText, 42, 32);
+  // events that are happening right now
+  ctx.font = '800 14px Nunito, sans-serif';
+  game.effects.forEach((e, i) => {
+    const left = Math.ceil(e.until - game.time);
+    const text = `${e.name.replace(/^\S+\s/, m => /\p{Extended_Pictographic}/u.test(m) ? '' : m)}: farms ${e.farms < 1 ? '-' : '+'}${Math.round(Math.abs(e.farms - 1) * 100)}% (${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')})`;
+    const y = 50 + i * 30;
+    const img = e.icon && glyphImage(e.icon);
+    const pad = img ? 34 : 8;
+    ctx.fillStyle = e.farms < 1 ? 'rgba(150,35,20,0.9)' : 'rgba(30,110,60,0.9)';
+    ctx.fillRect(10, y, ctx.measureText(text).width + pad + 10, 26);
+    ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.strokeRect(10, y, ctx.measureText(text).width + pad + 10, 26);
+    if (img) ctx.drawImage(img, 13, y + 1, 24, 24);
+    ctx.fillStyle = '#fff4dc';
+    ctx.fillText(text, 10 + pad, y + 18);
+  });
+
+  // the building you are placing follows your mouse
+  if (placing && mouse.over) {
+    const u = (mouse.x - cx) / rx, v = (mouse.y - cy) / ry;
+    const ok = canPlace(placing, u, v);
+    ctx.fillStyle = ok ? 'rgba(255,255,255,0.45)' : 'rgba(230,40,30,0.45)';
+    ctx.beginPath(); ctx.ellipse(mouse.x, mouse.y, 18 * s, 8 * s, 0, 0, 7); ctx.fill();
+    if (placing === 'torch') {   // show how far the light reaches
+      ctx.setLineDash([6, 5]); ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 2;
+      const reach = SHOP.find(i => i.id === 'torch').light * s;
+      ctx.beginPath(); ctx.arc(mouse.x, mouse.y, reach, 0, 7); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.globalAlpha = ok ? 0.85 : 0.5;
+    drawThing(placing, mouse.x, mouse.y, s);
+    ctx.globalAlpha = 1;
+  }
+
+  // little popup numbers
+  ctx.font = '16px Bungee, Impact, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textAlign = 'left';
+  for (const p of popups) {
+    ctx.globalAlpha = Math.max(0, p.life);
+    // each part is a number followed by a little picture
+    const widths = p.parts.map(([t]) => ctx.measureText(t).width + 24);
+    let x = p.x - widths.reduce((a, b) => a + b + 8, 0) / 2;
+    p.parts.forEach(([t, icon], i) => {
+      ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.strokeText(t, x, p.y);
+      ctx.fillStyle = '#f2b134'; ctx.fillText(t, x, p.y);
+      const img = glyphImage(icon);
+      if (img) ctx.drawImage(img, x + widths[i] - 22, p.y - 16, 20, 20);
+      x += widths[i] + 8;
+    });
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* Tonatiuh, the sun: a gold disk with pointed rays */
+function drawSun(x, y, r) {
+  ctx.fillStyle = '#f2b134';
+  for (let i = 0; i < 8; i++) {
+    const a = i * Math.PI / 4 + game.time * 0.1;
+    ctx.beginPath();
+    ctx.moveTo(x + Math.cos(a - 0.22) * r * 1.05, y + Math.sin(a - 0.22) * r * 1.05);
+    ctx.lineTo(x + Math.cos(a) * r * 1.75, y + Math.sin(a) * r * 1.75);
+    ctx.lineTo(x + Math.cos(a + 0.22) * r * 1.05, y + Math.sin(a + 0.22) * r * 1.05);
+    ctx.fill(); outline(Math.max(1, r * 0.08));
+  }
+  ctx.fillStyle = '#ffd34d'; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); outline(Math.max(1, r * 0.1));
+  ctx.strokeStyle = '#b2321f'; ctx.lineWidth = Math.max(1, r * 0.12); ctx.beginPath(); ctx.arc(x, y, r * 0.68, 0, 7); ctx.stroke();
+}
+
+/* The sign of Tenochtitlan: an eagle on a cactus growing from a rock */
+function drawEagleOnCactus(x, y, s) {
+  const k = Math.max(s, 0.6);
+  ctx.fillStyle = '#9a8f80'; ctx.beginPath(); ctx.ellipse(x, y, 7 * k, 2.6 * k, 0, 0, 7); ctx.fill(); outline(1 * k);
+  ctx.fillStyle = '#3f8f3a';
+  for (const [dx, dy, a] of [[0, -6, 0], [-3.5, -10, -0.5], [3.5, -10.5, 0.5]]) {
+    ctx.beginPath(); ctx.ellipse(x + dx * k, y + dy * k, 2.2 * k, 3.6 * k, a, 0, 7); ctx.fill(); outline(0.8 * k);
+  }
+  ctx.fillStyle = '#b2321f';   // cactus fruit
+  for (const [dx, dy] of [[-4.5, -13.3], [4.6, -13.8], [1.6, -8.5]]) { ctx.beginPath(); ctx.arc(x + dx * k, y + dy * k, 0.9 * k, 0, 7); ctx.fill(); }
+  ctx.fillStyle = '#7a4a22';   // the eagle with open wings
+  ctx.beginPath(); ctx.moveTo(x - 7 * k, y - 18 * k); ctx.lineTo(x - 1.5 * k, y - 14 * k); ctx.lineTo(x, y - 19 * k);
+  ctx.lineTo(x + 1.5 * k, y - 14 * k); ctx.lineTo(x + 7 * k, y - 18 * k); ctx.lineTo(x + 2 * k, y - 11.5 * k);
+  ctx.lineTo(x - 2 * k, y - 11.5 * k); ctx.closePath(); ctx.fill(); outline(0.8 * k);
+  ctx.fillStyle = '#fff4dc'; ctx.beginPath(); ctx.arc(x, y - 20 * k, 1.5 * k, 0, 7); ctx.fill(); outline(0.7 * k);
+  ctx.fillStyle = '#f2b134'; ctx.beginPath(); ctx.moveTo(x + 1.2 * k, y - 20.3 * k); ctx.lineTo(x + 2.8 * k, y - 19.8 * k); ctx.lineTo(x + 1.2 * k, y - 19.2 * k); ctx.fill();
+}
+
+/* ---------- ICONS ----------
+   Little pictures for the buttons, drawn with the same code as the map. */
+const glyphCache = {};
+function glyph(kind) {
+  if (glyphCache[kind] !== undefined) return glyphCache[kind];
+  const size = 96, c = document.createElement('canvas');
+  c.width = c.height = size;
+  const real = ctx;
+  ctx = c.getContext('2d');
+  const person = (job, tunic) => drawPerson(48, 90, 3.0, { job, tunic, feathers: ['#2e8b57', '#b2321f', '#1fa89a'], u: 0, v: 0, goalU: 0, goalV: 0, step: 0 });
+  let drew = true;
+  if (kind === 'farm') drawFarm(46, 66, 3.2);
+  else if (kind === 'house') drawHouse(48, 86, 3.6);
+  else if (kind === 'temple') drawTemple(48, 92, 2.6);
+  else if (kind === 'training') drawTraining(44, 82, 2.7);
+  else if (kind === 'market') drawMarket(48, 74, 3.4);
+  else if (kind === 'torch') drawTorch(48, 82, 3.8);
+  else if (kind === 'eagle') drawEagleHouse(46, 90, 3.0);
+  else if (kind === 'trader') person('trader');
+  else if (kind === 'farmer') person('farmer');
+  else if (kind === 'warrior') person('warrior');
+  else if (kind === 'free' || kind === 'people') person('free', '#b2321f');
+  else if (kind === 'faith') drawSun(48, 48, 24);
+  else if (kind === 'cacao') {
+    ctx.fillStyle = '#8a4a1f'; ctx.beginPath(); ctx.ellipse(48, 48, 20, 34, 0.5, 0, 7); ctx.fill(); outline(4);
+    ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 3;
+    for (const off of [-9, 0, 9]) { ctx.beginPath(); ctx.ellipse(48 + off * 0.9, 48 - off * 0.5, 3, 28, 0.5, 0, 7); ctx.stroke(); }
+    ctx.fillStyle = '#f2b134'; ctx.beginPath(); ctx.ellipse(60, 24, 6, 4, 0.5, 0, 7); ctx.fill();
+  } else if (kind === 'lock') {
+    // a carved stone lock: stepped shackle, stone body with a fret carving and a jade keyhole
+    const shackle = () => { ctx.beginPath(); ctx.moveTo(30, 50); ctx.lineTo(30, 30); ctx.lineTo(36, 30); ctx.lineTo(36, 22);
+      ctx.lineTo(60, 22); ctx.lineTo(60, 30); ctx.lineTo(66, 30); ctx.lineTo(66, 50); };
+    ctx.lineJoin = 'miter'; ctx.lineCap = 'butt';
+    shackle(); ctx.strokeStyle = INK; ctx.lineWidth = 15; ctx.stroke();
+    shackle(); ctx.strokeStyle = '#a39888'; ctx.lineWidth = 8; ctx.stroke();
+    box(16, 44, 64, 44, '#9a8f80', 5);                       // stone body
+    ctx.fillStyle = '#b2321f'; ctx.fillRect(18.5, 46.5, 59, 8);  // red band
+    ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(18, 55); ctx.lineTo(78, 55); ctx.stroke();
+    ctx.strokeStyle = 'rgba(26,20,18,.55)'; ctx.lineWidth = 3;  // stepped fret carving
+    for (const x0 of [20, 60]) { ctx.beginPath(); ctx.moveTo(x0, 82); ctx.lineTo(x0, 76); ctx.lineTo(x0 + 5, 76); ctx.lineTo(x0 + 5, 70); ctx.lineTo(x0 + 10, 70); ctx.lineTo(x0 + 10, 64); ctx.stroke(); }
+    ctx.fillStyle = '#1fa89a'; ctx.beginPath(); ctx.arc(48, 66, 8, 0, 7); ctx.fill(); outline(3);   // jade keyhole
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(48, 66, 3, 0, 7); ctx.fill(); ctx.fillRect(46, 66, 4, 12);
+  } else if (kind === 'famine') {
+    // a dried-up corn plant on cracked ground
+    ctx.strokeStyle = INK; ctx.lineWidth = 3;
+    ctx.fillStyle = '#b08a5a'; ctx.fillRect(14, 80, 68, 8); ctx.strokeRect(14, 80, 68, 8);
+    ctx.beginPath(); ctx.moveTo(30, 80); ctx.lineTo(36, 88); ctx.moveTo(60, 80); ctx.lineTo(55, 88); ctx.stroke();
+    ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(48, 80); ctx.quadraticCurveTo(52, 46, 66, 30); ctx.stroke();
+    ctx.fillStyle = '#a07a40';
+    for (const [x0, y0, x1, y1] of [[50, 62, 22, 72], [52, 50, 80, 64], [56, 40, 30, 46]]) {
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo((x0 + x1) / 2, y0 - 10, x1, y1); ctx.quadraticCurveTo((x0 + x1) / 2, y0, x0, y0 + 4); ctx.fill(); outline(2.5);
+    }
+    ctx.fillStyle = '#9a8f60'; ctx.beginPath(); ctx.ellipse(68, 28, 6, 11, 0.6, 0, 7); ctx.fill(); outline(3);
+  } else if (kind === 'clubs' || kind === 'war') {
+    // crossed macuahuitl clubs (and a shield for "war")
+    for (const a of [-0.7, 0.7]) {
+      ctx.save(); ctx.translate(48, 50); ctx.rotate(a);
+      ctx.fillStyle = '#9a6a3a'; ctx.fillRect(-5, -40, 10, 80); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.strokeRect(-5, -40, 10, 80);
+      ctx.fillStyle = INK; for (let b = 0; b < 5; b++) { ctx.fillRect(-10, -36 + b * 11, 5, 7); ctx.fillRect(5, -36 + b * 11, 5, 7); }
+      ctx.restore();
+    }
+    if (kind === 'war') {
+      ctx.fillStyle = '#1fa89a'; ctx.beginPath(); ctx.arc(48, 52, 24, 0, 7); ctx.fill(); outline(4);
+      ctx.fillStyle = '#fff4dc'; ctx.fillRect(25, 47, 46, 9); ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.strokeRect(25, 47, 46, 9);
+      ctx.fillStyle = '#b2321f'; for (let f = -1; f <= 1; f++) { ctx.beginPath(); ctx.ellipse(48 + f * 13, 82, 5, 10, 0, 0, 7); ctx.fill(); outline(2); }
+    }
+  } else if (kind === 'shield') {
+    ctx.fillStyle = '#1fa89a'; ctx.beginPath(); ctx.arc(48, 44, 30, 0, 7); ctx.fill(); outline(4);
+    ctx.fillStyle = '#f2b134'; ctx.beginPath(); ctx.arc(48, 44, 14, 0, 7); ctx.fill(); outline(3);
+    ctx.fillStyle = '#fff4dc'; ctx.fillRect(18, 39, 60, 10); ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.strokeRect(18, 39, 60, 10);
+    ctx.fillStyle = '#b2321f'; for (let f = -2; f <= 2; f++) { ctx.beginPath(); ctx.ellipse(48 + f * 11, 80, 5, 11, f * 0.15, 0, 7); ctx.fill(); outline(2); }
+  } else if (kind === 'skull') {
+    ctx.fillStyle = '#f3ead6'; ctx.beginPath(); ctx.arc(48, 42, 28, Math.PI * 0.85, Math.PI * 2.15);
+    ctx.lineTo(66, 78); ctx.lineTo(30, 78); ctx.closePath(); ctx.fill(); outline(4);
+    ctx.fillStyle = INK;
+    ctx.beginPath(); ctx.arc(37, 46, 8, 0, 7); ctx.arc(59, 46, 8, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(48, 54); ctx.lineTo(44, 63); ctx.lineTo(52, 63); ctx.closePath(); ctx.fill();
+    ctx.lineWidth = 2.5; for (let t = 0; t < 5; t++) { ctx.beginPath(); ctx.moveTo(36 + t * 6, 70); ctx.lineTo(36 + t * 6, 78); ctx.stroke(); }
+    ctx.fillStyle = '#b2321f'; ctx.beginPath(); ctx.arc(37, 46, 3, 0, 7); ctx.arc(59, 46, 3, 0, 7); ctx.fill();
+  } else if (kind === 'rain') {
+    // Tlaloc's rain cloud
+    ctx.fillStyle = '#2f7fd0';
+    ctx.beginPath(); ctx.arc(34, 42, 16, 0, 7); ctx.arc(54, 34, 20, 0, 7); ctx.arc(70, 46, 14, 0, 7); ctx.rect(30, 42, 44, 16); ctx.fill();
+    ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.stroke();
+    ctx.fillStyle = '#2f7fd0'; ctx.fillRect(32, 42, 40, 14);
+    ctx.fillStyle = '#fff4dc'; for (const x of [40, 56]) { ctx.beginPath(); ctx.arc(x, 44, 6, 0, 7); ctx.fill(); outline(2.5); }
+    ctx.fillStyle = '#1fa89a';
+    for (const [x, y] of [[30, 70], [46, 76], [62, 70], [38, 88], [56, 88]]) { ctx.beginPath(); ctx.moveTo(x, y - 8); ctx.quadraticCurveTo(x + 6, y, x, y + 4); ctx.quadraticCurveTo(x - 6, y, x, y - 8); ctx.fill(); outline(2); }
+  } else if (kind === 'harvest') {
+    ctx.fillStyle = '#4caf50';
+    ctx.beginPath(); ctx.moveTo(48, 90); ctx.quadraticCurveTo(14, 70, 22, 30); ctx.quadraticCurveTo(40, 60, 48, 90); ctx.fill(); outline(3);
+    ctx.beginPath(); ctx.moveTo(48, 90); ctx.quadraticCurveTo(82, 70, 74, 30); ctx.quadraticCurveTo(56, 60, 48, 90); ctx.fill(); outline(3);
+    ctx.fillStyle = '#f2c94c'; ctx.beginPath(); ctx.ellipse(48, 46, 14, 34, 0, 0, 7); ctx.fill(); outline(4);
+    ctx.fillStyle = '#d9a52c';
+    for (let r = 0; r < 7; r++) for (let c = 0; c < 3; c++) { ctx.beginPath(); ctx.arc(41 + c * 7, 22 + r * 8, 2.2, 0, 7); ctx.fill(); }
+  } else if (kind === 'ollin') {
+    // Ollin, the Aztec sign for movement and earthquakes
+    const cols = ['#b2321f', '#2f7fd0', '#f2b134', '#1fa89a'];
+    [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([dx, dy], i) => {
+      ctx.fillStyle = cols[i];
+      ctx.beginPath(); ctx.moveTo(48, 48); ctx.lineTo(48 + dx * 38, 48 + dy * 18); ctx.lineTo(48 + dx * 38, 48 + dy * 38); ctx.lineTo(48 + dx * 18, 48 + dy * 38); ctx.closePath(); ctx.fill(); outline(3.5);
+    });
+    ctx.fillStyle = '#fff4dc'; ctx.beginPath(); ctx.arc(48, 48, 13, 0, 7); ctx.fill(); outline(4);
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(48, 48, 5, 0, 7); ctx.fill();
+  } else if (kind === 'flower') {
+    // Xochitl, the flower sign
+    ctx.strokeStyle = '#2e8b57'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(48, 92); ctx.lineTo(48, 54); ctx.stroke();
+    ctx.fillStyle = '#2e8b57'; ctx.beginPath(); ctx.ellipse(36, 78, 10, 5, -0.5, 0, 7); ctx.fill(); outline(2.5);
+    ctx.beginPath(); ctx.ellipse(60, 72, 10, 5, 0.5, 0, 7); ctx.fill(); outline(2.5);
+    ctx.fillStyle = '#d23a6a';
+    for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4; ctx.beginPath(); ctx.ellipse(48 + Math.cos(a) * 15, 36 + Math.sin(a) * 15, 12, 9, a, 0, 7); ctx.fill(); outline(3); }
+    ctx.fillStyle = '#f2b134'; ctx.beginPath(); ctx.arc(48, 36, 10, 0, 7); ctx.fill(); outline(3);
+  } else if (kind === 'conquest') {
+    // a burning temple: how the Aztecs drew a city that was conquered
+    drawTemple(48, 92, 2.0);
+    ctx.fillStyle = '#ff9a2a';
+    ctx.beginPath(); ctx.moveTo(34, 34); ctx.quadraticCurveTo(28, 14, 44, 4); ctx.quadraticCurveTo(40, 18, 50, 20); ctx.quadraticCurveTo(52, 8, 62, 6); ctx.quadraticCurveTo(70, 22, 62, 34); ctx.closePath(); ctx.fill(); outline(3);
+    ctx.fillStyle = '#ffe36a'; ctx.beginPath(); ctx.moveTo(42, 34); ctx.quadraticCurveTo(40, 22, 48, 16); ctx.quadraticCurveTo(58, 24, 56, 34); ctx.closePath(); ctx.fill();
+  } else if (kind === 'crown') {
+    // xiuhuitzolli: the turquoise crown of the Aztec ruler
+    ctx.fillStyle = '#1fa89a';
+    ctx.beginPath(); ctx.moveTo(18, 74); ctx.lineTo(24, 46); ctx.lineTo(56, 14); ctx.lineTo(70, 40); ctx.lineTo(76, 74); ctx.closePath(); ctx.fill(); outline(4);
+    ctx.fillStyle = '#4fd1c0'; for (const [x, y] of [[40, 50], [56, 38], [60, 58], [34, 66]]) { ctx.beginPath(); ctx.arc(x, y, 4, 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#f2b134'; ctx.fillRect(16, 72, 62, 10); ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.strokeRect(16, 72, 62, 10);
+    ctx.fillStyle = '#b2321f'; ctx.beginPath(); ctx.moveTo(76, 76); ctx.lineTo(90, 70); ctx.lineTo(88, 90); ctx.closePath(); ctx.fill(); outline(2.5);
+  } else if (kind === 'drum' || kind === 'drumOff') {
+    // a huehuetl: a tall carved drum standing on legs, with a jaguar-skin top
+    ctx.fillStyle = '#9a6a3a';
+    ctx.beginPath(); ctx.moveTo(26, 22); ctx.lineTo(70, 22); ctx.lineTo(66, 76); ctx.lineTo(30, 76); ctx.closePath(); ctx.fill(); outline(4);
+    ctx.fillStyle = '#b2321f'; ctx.fillRect(27, 30, 42, 8); ctx.strokeStyle = INK; ctx.lineWidth = 2.5; ctx.strokeRect(27, 30, 42, 8);
+    ctx.strokeStyle = 'rgba(26,20,18,.6)'; ctx.lineWidth = 3;    // carved steps
+    ctx.beginPath(); ctx.moveTo(32, 66); ctx.lineTo(32, 58); ctx.lineTo(40, 58); ctx.lineTo(40, 50); ctx.lineTo(48, 50); ctx.lineTo(48, 58); ctx.lineTo(56, 58); ctx.lineTo(56, 50); ctx.lineTo(64, 50); ctx.stroke();
+    ctx.fillStyle = INK;                                        // legs with gaps between them
+    for (const x of [30, 42, 54]) { ctx.beginPath(); ctx.moveTo(x, 76); ctx.lineTo(x + 6, 76); ctx.lineTo(x + 3, 88); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle = '#9a6a3a'; ctx.fillRect(28, 76, 40, 4); ctx.strokeRect(28, 76, 40, 4);
+    ctx.fillStyle = '#e8b33a'; ctx.beginPath(); ctx.ellipse(48, 22, 23, 7, 0, 0, 7); ctx.fill(); outline(3.5);
+    ctx.fillStyle = INK; for (const [x, y] of [[38, 21], [48, 24], [57, 20], [44, 19]]) { ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 7); ctx.fill(); }
+    if (kind === 'drumOff') {
+      ctx.strokeStyle = INK; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(14, 86); ctx.lineTo(82, 12); ctx.stroke();
+      ctx.strokeStyle = '#b2321f'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(14, 86); ctx.lineTo(82, 12); ctx.stroke();
+    }
+  } else if (kind === 'altar') {
+    // a stone altar with a fire offering
+    ctx.fillStyle = '#7d7064'; ctx.beginPath(); ctx.moveTo(22, 88); ctx.lineTo(28, 54); ctx.lineTo(68, 54); ctx.lineTo(74, 88); ctx.closePath(); ctx.fill(); outline(4);
+    ctx.fillStyle = '#b2321f'; ctx.fillRect(26, 50, 44, 8); ctx.strokeRect(26, 50, 44, 8);
+    ctx.fillStyle = '#ff9a2a'; ctx.beginPath(); ctx.moveTo(32, 50); ctx.quadraticCurveTo(30, 26, 48, 8); ctx.quadraticCurveTo(66, 26, 64, 50); ctx.closePath(); ctx.fill(); outline(3);
+    ctx.fillStyle = '#ffe36a'; ctx.beginPath(); ctx.moveTo(40, 50); ctx.quadraticCurveTo(40, 34, 48, 24); ctx.quadraticCurveTo(56, 34, 56, 50); ctx.closePath(); ctx.fill();
+  } else drew = false;
+  ctx = real;
+  return (glyphCache[kind] = drew ? c.toDataURL() : null);
+}
+const glyphImages = {};
+function glyphImage(kind) {
+  if (!glyph(kind)) return null;
+  if (!glyphImages[kind]) { glyphImages[kind] = new Image(); glyphImages[kind].src = glyph(kind); }
+  return glyphImages[kind].complete ? glyphImages[kind] : null;
+}
+function fillGlyphs() {
+  document.querySelectorAll('img[data-glyph]').forEach(img => { img.src = glyph(img.dataset.glyph); });
+}
+
+/* how tall the mountains are at x (two peaks: left at 1/4, right at 3/4 of the screen) */
+function mountainHeight(x) {
+  const pts = [[0, 0], [W * 0.25, H * 0.14], [W * 0.5, 0], [W * 0.75, H * 0.2], [W, 0]];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x1, h1] = pts[i], [x2, h2] = pts[i + 1];
+    if (x <= x2) return h1 + (h2 - h1) * (x - x1) / (x2 - x1);
+  }
+  return 0;
+}
+
+function drawThing(kind, x, y, s) {
+  if (kind === 'farm') drawFarm(x, y, s);
+  else if (kind === 'house') drawHouse(x, y, s);
+  else if (kind === 'temple') drawTemple(x, y, s);
+  else if (kind === 'training') drawTraining(x, y, s);
+  else if (kind === 'market') drawMarket(x, y, s);
+  else if (kind === 'torch') drawTorch(x, y, s);
+  else if (kind === 'eagle') drawEagleHouse(x, y, s);
+}
+
+/* black outline around whatever shape was just drawn (codex painting style) */
+const INK = '#1a1412';
+function outline(width) {
+  ctx.strokeStyle = INK; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.stroke();
+}
+function box(x, y, w, h, color, line) {
+  ctx.fillStyle = color; ctx.beginPath(); ctx.rect(x, y, w, h); ctx.fill(); outline(line);
+}
+
+/* CHINAMPA: a floating garden of mud and reeds with rows of maize and a willow tree */
+function drawFarm(x, y, s) {
+  const w = 26 * s, h = 11 * s;
+  box(x - w / 2, y - h / 2, w, h, '#7a5530', 1.2 * s);
+  ctx.fillStyle = '#6fae3f'; ctx.fillRect(x - w / 2 + 2 * s, y - h / 2 + 2 * s, w - 4 * s, h - 4 * s);
+  for (let r = 0; r < 2; r++) {
+    for (let k = 0; k < 5; k++) {
+      const px = x - w / 2 + 4.5 * s + k * 4.2 * s, py = y - h / 2 + 4.5 * s + r * 3.6 * s;
+      ctx.strokeStyle = '#2f6b22'; ctx.lineWidth = 1 * s;
+      ctx.beginPath(); ctx.moveTo(px, py + 1.5 * s); ctx.lineTo(px, py - 2 * s); ctx.stroke();
+      ctx.fillStyle = '#f2c94c'; ctx.fillRect(px - 0.6 * s, py - 2.8 * s, 1.2 * s, 1.5 * s);
+    }
+  }
+  // ahuejote willow tree on the corner (they held the gardens in place)
+  ctx.fillStyle = '#5a3a1a'; ctx.fillRect(x + w / 2 - 3.6 * s, y - h / 2 - 4 * s, 1.4 * s, 5 * s);
+  ctx.fillStyle = '#2f7a3a';
+  ctx.beginPath(); ctx.ellipse(x + w / 2 - 2.9 * s, y - h / 2 - 8 * s, 2.6 * s, 5 * s, 0, 0, 7); ctx.fill(); outline(1 * s);
+}
+
+/* CALLI: an adobe house with a red frieze, like the house picture in Aztec writing */
+function drawHouse(x, y, s) {
+  box(x - 11 * s, y - 2 * s, 22 * s, 3 * s, '#a8957a', 1 * s);            // stone platform
+  box(x - 9 * s, y - 11 * s, 18 * s, 9 * s, '#f3e6c8', 1.2 * s);          // walls
+  box(x - 10 * s, y - 14 * s, 20 * s, 3.5 * s, '#b2321f', 1.2 * s);       // red frieze
+  ctx.fillStyle = '#fff4dc';
+  for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(x - 6.4 * s + k * 4.3 * s, y - 12.25 * s, 0.9 * s, 0, 7); ctx.fill(); }
+  ctx.fillStyle = '#c89b4a';                                             // thatch roof
+  ctx.beginPath(); ctx.moveTo(x - 8 * s, y - 14 * s); ctx.lineTo(x, y - 19 * s); ctx.lineTo(x + 8 * s, y - 14 * s); ctx.closePath(); ctx.fill(); outline(1.2 * s);
+  ctx.fillStyle = INK; ctx.fillRect(x - 2 * s, y - 8 * s, 4 * s, 6 * s);  // doorway
+}
+
+/* TEOCALLI: a stepped pyramid with stairs and a shrine on top */
+function drawTemple(x, y, s) {
+  const tiers = [[30, 6, '#cdb78c'], [24, 6, '#d9c49a'], [18, 6, '#e5d2aa']];
+  let top = y;
+  for (const [w, h, color] of tiers) {
+    box(x - w * s / 2, top - h * s, w * s, h * s, color, 1.2 * s);
+    ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.fillRect(x - w * s / 2, top - 1.6 * s, w * s, 1.6 * s);
+    top -= h * s;
+  }
+  box(x - 3 * s, top, 6 * s, y - top, '#f3e6c8', 1 * s);                  // stairs
+  ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 0.8 * s;
+  for (let t = top + 2 * s; t < y; t += 2 * s) { ctx.beginPath(); ctx.moveTo(x - 3 * s, t); ctx.lineTo(x + 3 * s, t); ctx.stroke(); }
+  box(x - 6 * s, top - 7 * s, 12 * s, 7 * s, '#f3e6c8', 1.2 * s);          // shrine
+  ctx.fillStyle = INK; ctx.fillRect(x - 2 * s, top - 4.5 * s, 4 * s, 4.5 * s);
+  box(x - 7 * s, top - 11 * s, 14 * s, 4 * s, '#b2321f', 1.2 * s);         // red roof
+  ctx.fillStyle = '#f3e6c8';
+  for (let k = 0; k < 4; k++) ctx.fillRect(x - 6.4 * s + k * 3.6 * s, top - 13 * s, 2 * s, 2 * s);   // little roof steps
+}
+
+/* WARRIOR SCHOOL: a training yard with a rack of macuahuitl clubs and a feather banner */
+function drawTraining(x, y, s) {
+  ctx.fillStyle = '#b9a27a'; ctx.beginPath(); ctx.ellipse(x, y - 2 * s, 16 * s, 6 * s, 0, 0, 7); ctx.fill(); outline(1.2 * s);
+  ctx.fillStyle = '#6a4422';
+  ctx.fillRect(x - 12 * s, y - 13 * s, 1.6 * s, 11 * s); ctx.fillRect(x - 2 * s, y - 13 * s, 1.6 * s, 11 * s);
+  ctx.fillRect(x - 12.5 * s, y - 13 * s, 12 * s, 1.5 * s);
+  for (let k = 0; k < 3; k++) {          // clubs with black obsidian blades
+    const cx = x - 9.5 * s + k * 3 * s;
+    ctx.fillStyle = '#9a6a3a'; ctx.fillRect(cx, y - 12 * s, 1.5 * s, 8 * s);
+    ctx.fillStyle = INK;
+    for (let b = 0; b < 3; b++) { ctx.fillRect(cx - 0.7 * s, y - 11 * s + b * 2.2 * s, 0.7 * s, 1.4 * s); ctx.fillRect(cx + 1.5 * s, y - 11 * s + b * 2.2 * s, 0.7 * s, 1.4 * s); }
+  }
+  ctx.fillStyle = '#5a3a1a'; ctx.fillRect(x + 6 * s, y - 21 * s, 1.3 * s, 19 * s);   // banner pole
+  box(x + 7.3 * s, y - 21 * s, 7 * s, 8 * s, '#fff4dc', 1 * s);
+  ctx.fillStyle = '#b2321f'; ctx.fillRect(x + 7.3 * s, y - 18.5 * s, 7 * s, 2.2 * s);
+  ctx.fillStyle = '#1fa89a';
+  for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.ellipse(x + 8.5 * s + k * 2.3 * s, y - 11.8 * s, 0.9 * s, 1.8 * s, 0, 0, 7); ctx.fill(); }
+}
+
+/* NIGHT TORCH: a fire bowl on a pole, standing on a little reed raft */
+function drawTorch(x, y, s) {
+  ctx.fillStyle = '#7a5530'; ctx.beginPath(); ctx.ellipse(x, y, 6 * s, 2.4 * s, 0, 0, 7); ctx.fill(); outline(1 * s);
+  ctx.fillStyle = '#6a4422'; ctx.fillRect(x - 0.8 * s, y - 13 * s, 1.6 * s, 13 * s);
+  ctx.fillStyle = '#7d7064'; ctx.beginPath(); ctx.moveTo(x - 3.5 * s, y - 14 * s); ctx.lineTo(x + 3.5 * s, y - 14 * s);
+  ctx.lineTo(x + 2 * s, y - 11.5 * s); ctx.lineTo(x - 2 * s, y - 11.5 * s); ctx.closePath(); ctx.fill(); outline(0.9 * s);
+  const f = 1 + Math.sin(game.time * 12 + x) * 0.2;
+  ctx.fillStyle = '#ff9a2a'; ctx.beginPath(); ctx.ellipse(x, y - 17 * s * f + 0.5 * s, 2.6 * s, 3.6 * s * f, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ffe36a'; ctx.beginPath(); ctx.ellipse(x, y - 16 * s, 1.2 * s, 2 * s * f, 0, 0, 7); ctx.fill();
+}
+
+/* TIANGUIS: a market with colorful shade cloths and goods for sale */
+function drawMarket(x, y, s) {
+  box(x - 13 * s, y - 3 * s, 26 * s, 4 * s, '#cdb78c', 1 * s);       // stone plaza
+  const cloths = ['#b2321f', '#1fa89a', '#f2b134'];
+  const goods = ['#f2c94c', '#8a4a1f', '#d23a2a'];   // corn, cacao, chilis
+  for (let k = 0; k < 3; k++) {
+    const mx = x - 8.5 * s + k * 8.5 * s, my = y - (k === 1 ? 2.5 : 0) * s;
+    ctx.fillStyle = '#5a3a1a';
+    ctx.fillRect(mx - 3.5 * s, my - 10 * s, 1 * s, 8 * s); ctx.fillRect(mx + 2.5 * s, my - 10 * s, 1 * s, 8 * s);
+    ctx.fillStyle = cloths[k];
+    ctx.beginPath(); ctx.moveTo(mx - 4.5 * s, my - 9 * s); ctx.lineTo(mx, my - 13 * s); ctx.lineTo(mx + 4.5 * s, my - 9 * s); ctx.closePath(); ctx.fill(); outline(0.9 * s);
+    ctx.fillStyle = goods[k];
+    for (let g = 0; g < 3; g++) { ctx.beginPath(); ctx.arc(mx - 2 * s + g * 2 * s, my - 3 * s, 1 * s, 0, 7); ctx.fill(); }
+    ctx.strokeStyle = INK; ctx.lineWidth = 0.6 * s; ctx.beginPath(); ctx.arc(mx, my - 3 * s, 3.2 * s, Math.PI * 0.05, Math.PI * 0.95); ctx.stroke();   // basket
+  }
+}
+
+/* EAGLE WARRIOR HOUSE: a hall with a feather frieze and a big eagle head */
+function drawEagleHouse(x, y, s) {
+  box(x - 14 * s, y - 3 * s, 28 * s, 3 * s, '#a8957a', 1 * s);
+  box(x - 11 * s, y - 6 * s, 22 * s, 3 * s, '#bba888', 1 * s);
+  box(x - 9 * s, y - 15 * s, 18 * s, 9 * s, '#f3e6c8', 1.2 * s);        // walls
+  box(x - 10 * s, y - 18.5 * s, 20 * s, 3.5 * s, '#5a3a1a', 1.2 * s);   // feather frieze
+  for (let k = 0; k < 6; k++) { ctx.fillStyle = k % 2 ? '#fff4dc' : '#1fa89a'; ctx.beginPath(); ctx.ellipse(x - 8 * s + k * 3.2 * s, y - 16.8 * s, 1.1 * s, 1.5 * s, 0, 0, 7); ctx.fill(); }
+  ctx.fillStyle = INK; ctx.fillRect(x - 2 * s, y - 12 * s, 4 * s, 6 * s);   // doorway
+  // eagle head on the roof
+  ctx.fillStyle = '#7a4a22'; ctx.beginPath(); ctx.arc(x, y - 22 * s, 4 * s, 0, 7); ctx.fill(); outline(1 * s);
+  ctx.fillStyle = '#f2b134'; ctx.beginPath(); ctx.moveTo(x + 2.5 * s, y - 23.5 * s); ctx.lineTo(x + 7 * s, y - 21.5 * s); ctx.lineTo(x + 2.5 * s, y - 20 * s); ctx.closePath(); ctx.fill(); outline(0.8 * s);
+  ctx.fillStyle = '#fff4dc'; ctx.beginPath(); ctx.arc(x + 0.8 * s, y - 23 * s, 1.1 * s, 0, 7); ctx.fill();
+  ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x + 1 * s, y - 23 * s, 0.5 * s, 0, 7); ctx.fill();
+}
+
+/* a small enemy city: a little pyramid with its banner */
+function drawTown(x, y, ts, flag) {
+  box(x - 12 * ts, y - 6 * ts, 24 * ts, 6 * ts, '#cdb78c', 1 * ts);
+  box(x - 8 * ts, y - 11 * ts, 16 * ts, 5 * ts, '#d9c49a', 1 * ts);
+  box(x - 4 * ts, y - 16 * ts, 8 * ts, 5 * ts, '#f3e6c8', 1 * ts);
+  box(x - 5 * ts, y - 18.5 * ts, 10 * ts, 2.5 * ts, '#b2321f', 1 * ts);
+  ctx.fillStyle = '#5a3a1a'; ctx.fillRect(x + 7 * ts, y - 27 * ts, 1.3 * ts, 21 * ts);
+  box(x + 8.3 * ts, y - 27 * ts, 9 * ts, 6 * ts, flag, 1 * ts);
+}
+
+/* ---------- LITTLE PEOPLE ----------
+   Up to 60 people walk around the island.
+   Change these colors to change their outfits!                 */
+const TUNIC_COLORS   = ['#1fa89a', '#c0392b', '#f2b134', '#ffffff', '#2f7fd0'];
+const FEATHER_COLORS = ['#1e9e4a', '#c0392b', '#2ec4b6', '#f2b134'];
+const walkers = [];
+
+function updateWalkers(dt) {
+  const want = Math.min(60, Math.floor(game.people));
+  while (walkers.length < want) {
+    const spot = spots[Math.floor(Math.random() * spots.length)], land = landSize();
+    const n = walkers.length;
+    walkers.push({
+      u: spot.u * land, v: spot.v * land, goalU: spot.u * land, goalV: spot.v * land, wait: 0, step: Math.random() * 6,
+      tunic: TUNIC_COLORS[n % TUNIC_COLORS.length],
+      feathers: [FEATHER_COLORS[n % 4], FEATHER_COLORS[(n + 1) % 4], FEATHER_COLORS[(n + 2) % 4]],
+    });
+  }
+  walkers.length = want;
+
+  /* NIGHT: everyone goes home to sleep. But farmers with farms lit by torches
+     go out to work. In the morning everyone comes out. */
+  const night = isNight();
+  const homes = game.placed.filter(p => p.kind === 'house');
+  let litFarms = [];
+  if (night && (game.owned.torch || 0) > 0) {
+    const g = layout(), reach = SHOP.find(i => i.id === 'torch').light * g.s;
+    const torches = game.placed.filter(p => p.kind === 'torch');
+    litFarms = game.placed.filter(p => p.kind === 'farm' && farmIsLit(p, torches, g, reach));
+  }
+  const land = landSize();
+  const pickSpot = (w) => { const spot = spots[Math.floor(Math.random() * spots.length)]; w.goalU = spot.u * land; w.goalV = spot.v * land; };
+
+  for (const w of walkers) {
+    const working = w.job === 'farmer' && litFarms.length > 0;
+    if (night && !working) {
+      // head home (to the closest house) and go inside
+      if (w.inside) continue;
+      if (!w.home && homes.length) {
+        w.home = homes.reduce((a, b) => Math.hypot(a.u - w.u, a.v - w.v) < Math.hypot(b.u - w.u, b.v - w.v) ? a : b);
+        w.goalU = w.home.u; w.goalV = w.home.v + 0.01;
+      }
+      if (!w.home) continue;                       // no houses yet: they sleep where they are
+      if (walkTo(w, dt, 0.16)) w.inside = true;
+      continue;
+    }
+    if (w.inside || w.home) {                      // come back out of the house
+      w.inside = false; w.home = null; w.wait = Math.random() * 2; pickSpot(w);
+    }
+    if (night && w.job === 'farmer' && !w.toFarm) w.wait = 0;
+    if (!walkTo(w, dt, night ? 0.12 : 0.06)) continue;
+    if ((w.wait -= dt) > 0) continue;
+    if (night && w.job === 'farmer') {
+      // go to the shore next to a lit farm and work there
+      const f = litFarms[Math.floor(Math.random() * litFarms.length)], r = Math.hypot(f.u, f.v);
+      w.goalU = f.u / r * land * 0.86; w.goalV = f.v / r * land * 0.86; w.toFarm = true; w.wait = 2 + Math.random() * 4;
+    } else {
+      pickSpot(w); w.toFarm = false; w.wait = 1 + Math.random() * 3;
+    }
+  }
+}
+
+/* moves a walker toward its goal. Returns true once it has arrived. */
+function walkTo(w, dt, speed) {
+  const du = w.goalU - w.u, dv = w.goalV - w.v, dist = Math.hypot(du, dv);
+  if (dist <= 0.01) return true;
+  const stepLen = Math.min(dist, speed * dt);
+  w.u += du / dist * stepLen;
+  w.v += dv / dist * stepLen;
+  w.step += dt * 10;
+  return false;
+}
+
+function drawPerson(x, y, s, w) {
+  const k = s * 1.1;
+  const walking = Math.hypot(w.goalU - w.u, w.goalV - w.v) > 0.01;
+  const swing = walking ? Math.sin(w.step) * 1.8 * k : 0;
+  const line = 0.7 * k;
+  const eagle = w.job === 'eagle', warrior = w.job === 'warrior' || eagle, farmer = w.job === 'farmer', trader = w.job === 'trader';
+  const suit = eagle ? '#7a4a22' : '#e8b33a';
+  // legs (with jaguar spots for warriors)
+  if (trader) {   // a cacaxtli backpack full of goods to sell
+    box(x - 6.6 * k, y - 12.5 * k, 4.6 * k, 7.5 * k, '#8a5a32', line);
+    ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.lineWidth = 0.6 * k;
+    ctx.beginPath(); ctx.moveTo(x - 6.6 * k, y - 9 * k); ctx.lineTo(x - 2 * k, y - 9 * k); ctx.stroke();
+    ctx.fillStyle = '#f2c94c'; ctx.beginPath(); ctx.arc(x - 5.4 * k, y - 13.4 * k, 1.1 * k, 0, 7); ctx.fill(); outline(line * 0.7);
+    ctx.fillStyle = '#d23a2a'; ctx.beginPath(); ctx.arc(x - 3.3 * k, y - 13.6 * k, 1.1 * k, 0, 7); ctx.fill(); outline(line * 0.7);
+  }
+  ctx.fillStyle = warrior ? suit : '#9a6234';
+  ctx.fillRect(x - 2 * k + swing * 0.5, y - 4.5 * k, 1.7 * k, 4.5 * k);
+  ctx.fillRect(x + 0.3 * k - swing * 0.5, y - 4.5 * k, 1.7 * k, 4.5 * k);
+  ctx.fillStyle = INK;   // sandals
+  ctx.fillRect(x - 2.2 * k + swing * 0.5, y - 0.6 * k, 2.1 * k, 0.8 * k);
+  ctx.fillRect(x + 0.1 * k - swing * 0.5, y - 0.6 * k, 2.1 * k, 0.8 * k);
+  // body: a jaguar suit for warriors, a white tilmatli cloak with a colored edge for everyone else
+  ctx.fillStyle = warrior ? suit : '#f6eedb';
+  ctx.beginPath(); ctx.moveTo(x - 3.6 * k, y - 4 * k); ctx.lineTo(x - 2.6 * k, y - 10.5 * k);
+  ctx.lineTo(x + 2.6 * k, y - 10.5 * k); ctx.lineTo(x + 3.6 * k, y - 4 * k); ctx.closePath(); ctx.fill(); outline(line);
+  if (eagle) {        // white feather tips on the eagle suit
+    ctx.fillStyle = '#fff4dc';
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) { ctx.beginPath(); ctx.arc(x - 1.8 * k + c * 1.8 * k, y - 8.8 * k + r * 2.6 * k, 0.6 * k, 0, Math.PI); ctx.fill(); }
+  } else if (warrior) {
+    ctx.fillStyle = INK;
+    for (const [dx, dy] of [[-1.5, -8.5], [1.2, -7.2], [-0.6, -5.4], [2, -9.4]]) { ctx.beginPath(); ctx.arc(x + dx * k, y + dy * k, 0.55 * k, 0, 7); ctx.fill(); }
+  } else {
+    ctx.fillStyle = farmer ? '#2e8b57' : w.tunic;
+    ctx.fillRect(x - 3.5 * k, y - 5.3 * k, 7 * k, 1.3 * k);    // cloak border
+    ctx.beginPath(); ctx.arc(x + 1.8 * k, y - 10 * k, 0.9 * k, 0, 7); ctx.fill();   // knot at the shoulder
+  }
+  // head
+  ctx.fillStyle = '#9a6234';
+  ctx.beginPath(); ctx.arc(x, y - 12.6 * k, 2.3 * k, 0, 7); ctx.fill(); outline(line);
+  if (eagle) {
+    // eagle helmet: the warrior looks out of the eagle's open beak
+    ctx.fillStyle = '#7a4a22';
+    ctx.beginPath(); ctx.arc(x, y - 13.8 * k, 2.8 * k, Math.PI * 0.95, Math.PI * 2.05); ctx.fill(); outline(line);
+    ctx.fillStyle = '#f2b134';
+    ctx.beginPath(); ctx.moveTo(x - 0.5 * k, y - 15.6 * k); ctx.lineTo(x + 4.2 * k, y - 14.8 * k); ctx.lineTo(x + 1.2 * k, y - 13.4 * k); ctx.closePath(); ctx.fill(); outline(line * 0.8);
+    ctx.fillStyle = '#fff4dc'; ctx.beginPath(); ctx.arc(x - 0.6 * k, y - 15.4 * k, 0.7 * k, 0, 7); ctx.fill();
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x - 0.4 * k, y - 15.4 * k, 0.35 * k, 0, 7); ctx.fill();
+  }
+  if (warrior) {
+    if (!eagle) {
+    // jaguar helmet: the warrior looks out of the jaguar's mouth
+    ctx.fillStyle = '#e8b33a';
+    ctx.beginPath(); ctx.arc(x, y - 13.6 * k, 2.8 * k, Math.PI * 0.95, Math.PI * 2.05); ctx.fill(); outline(line);
+    ctx.beginPath(); ctx.arc(x - 1.9 * k, y - 16 * k, 0.9 * k, 0, 7); ctx.fill(); outline(line * 0.8);   // ears
+    ctx.beginPath(); ctx.arc(x + 1.9 * k, y - 16 * k, 0.9 * k, 0, 7); ctx.fill(); outline(line * 0.8);
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x - 0.8 * k, y - 15 * k, 0.4 * k, 0, 7); ctx.arc(x + 1 * k, y - 14.8 * k, 0.4 * k, 0, 7); ctx.fill();
+    }
+    // round chimalli shield with feather fringe
+    ctx.fillStyle = '#1fa89a';
+    ctx.beginPath(); ctx.arc(x - 3.8 * k, y - 7.2 * k, 3.1 * k, 0, 7); ctx.fill(); outline(line);
+    ctx.fillStyle = '#fff4dc'; ctx.fillRect(x - 6.9 * k, y - 7.8 * k, 6.2 * k, 1.2 * k);
+    ctx.fillStyle = '#b2321f';
+    for (let f = -1; f <= 1; f++) { ctx.beginPath(); ctx.ellipse(x - 3.8 * k + f * 1.8 * k, y - 3.6 * k, 0.6 * k, 1.3 * k, 0, 0, 7); ctx.fill(); }
+    // macuahuitl: a wooden club edged with obsidian
+    ctx.fillStyle = '#9a6a3a'; ctx.fillRect(x + 3.4 * k, y - 15 * k, 1.5 * k, 9 * k);
+    ctx.fillStyle = INK;
+    for (let b = 0; b < 3; b++) { ctx.fillRect(x + 2.7 * k, y - 14.5 * k + b * 2.4 * k, 0.7 * k, 1.5 * k); ctx.fillRect(x + 4.9 * k, y - 14.5 * k + b * 2.4 * k, 0.7 * k, 1.5 * k); }
+  } else {
+    // black hair (codex style) and a headband
+    ctx.fillStyle = INK;
+    ctx.beginPath(); ctx.arc(x, y - 13 * k, 2.4 * k, Math.PI, Math.PI * 2); ctx.fill();
+    ctx.fillRect(x - 2.4 * k, y - 13 * k, 1 * k, 2.2 * k);
+    ctx.fillStyle = farmer ? '#fff4dc' : '#f2b134'; ctx.fillRect(x - 2.5 * k, y - 14.4 * k, 5 * k, 1.1 * k);
+    if (!farmer) {      // feathers
+      w.feathers.forEach((color, i) => {
+        ctx.save(); ctx.translate(x + (i - 1) * 0.9 * k, y - 14.4 * k); ctx.rotate((i - 1) * 0.45);
+        ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(0, -2.6 * k, 0.9 * k, 2.6 * k, 0, 0, 7); ctx.fill(); outline(line * 0.6);
+        ctx.restore();
+      });
+    } else {
+      // coa digging stick and an ear of corn
+      ctx.strokeStyle = '#6a4422'; ctx.lineWidth = 1.1 * k;
+      ctx.beginPath(); ctx.moveTo(x + 4.2 * k, y - 0.5 * k); ctx.lineTo(x + 3.2 * k, y - 15 * k); ctx.stroke();
+      ctx.fillStyle = '#4caf50'; ctx.beginPath(); ctx.ellipse(x - 4.4 * k, y - 6.6 * k, 1.1 * k, 2.6 * k, -0.3, 0, 7); ctx.fill();
+      ctx.fillStyle = '#f2c94c'; ctx.beginPath(); ctx.ellipse(x - 4.2 * k, y - 7.6 * k, 1.3 * k, 2.4 * k, -0.3, 0, 7); ctx.fill(); outline(line * 0.8);
+    }
+  }
+}
+
+/* ---------- GAME LOOP ---------- */
+let last = performance.now(), slowTimer = 0, farmTimer = 0;
+function loop(now) {
+  const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
+  last = now;
+
+  if (tutStep < 0) {   // (the game waits while the tutorial is open)
+    game.time += dt;
+    updateRaid();
+    updateEvents();
+    game.cacao += cacaoPerSecond() * dt;
+    // people move in until the houses are full
+    if (game.people < room()) game.people = Math.min(room(), game.people + Math.max(0.5, (room() - game.people) * 0.1) * dt);
+  }
+
+  fixJobs();
+  shownLand += (landSize() - shownLand) * Math.min(1, dt * 2);
+  // faith slowly moves toward its goal (rises faster than it falls)
+  const goal = faithGoal();
+  if (game.faith < goal) game.faith = Math.min(goal, game.faith + 3 * dt);
+  else game.faith = Math.max(goal, game.faith - 1 * dt);
+  updateWalkers(dt);
+  for (const p of popups) { p.y -= 40 * dt; p.life -= dt; }
+  while (popups.length && popups[0].life <= 0) popups.shift();
+
+  slowTimer += dt;
+  if (slowTimer > 0.2) { slowTimer = 0; updateNumbers(); }
+  farmTimer += dt;
+  if (farmTimer > 1) { farmTimer = 0; fixFarms(); }   // check the farms once a second
+
+  drawMap();
+  requestAnimationFrame(loop);
+}
+
+
+/* ---------- SAVING ---------- */
+function save() { try { localStorage.setItem(SAVE_NAME, JSON.stringify(game)); } catch (e) {} }
+function load() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SAVE_NAME));
+    if (saved) {
+      game = Object.assign(newGame(), saved);
+      if (saved.farmers === undefined) game.farmers = Math.min(game.owned.farm, Math.floor(game.people));
+      if (!saved.placed) game.placed = autoPlace();   // older saves: put things in tidy spots
+    }
+  } catch (e) {}
+}
+setInterval(save, 5000);
+window.addEventListener('beforeunload', save);
+
+
+/* for older saves that didn't remember where things were */
+function autoPlace() {
+  const list = [];
+  for (let i = 0; i < game.owned.farm; i++) {
+    const ring = 1.2 + Math.floor(i / 24) * 0.17, a = (i % 24) / 24 * Math.PI * 2 + ring;
+    list.push({ kind: 'farm', u: Math.cos(a) * ring, v: Math.sin(a) * ring });
+  }
+  let n = 0;
+  for (const kind of ['house', 'temple', 'training'])
+    for (let i = 0; i < (game.owned[kind] || 0) && n < spots.length; i++, n++) list.push({ kind, u: spots[n].u, v: spots[n].v });
+  return list;
+}
+
+/* ---------- TUTORIAL ----------
+   Shows on your first game and every new game. The ? button shows it again.
+   target = the part of the screen to light up (leave it out for no spotlight).
+   To change the tutorial, just edit the words here!                      */
+const TUTORIAL = [
+  { icon: 'crown', title: 'Welcome, Tlatoani!',
+    text: 'You are the ruler of a tiny Aztec village on an island in Lake Texcoco. Your job: grow it into a mighty empire!' },
+  { icon: 'cacao', target: '#statCacao', title: 'Cacao beans',
+    text: 'The Aztecs used cacao beans as money! You spend cacao to build everything. Your farmers make it for you.' },
+  { icon: 'farm', target: '.buy[data-id="farm"]', title: 'Farms',
+    text: 'Click Farm, then click on the lake to place it. Each farm has room for 6 farmers. You start with one free farm and 2 farmers.' },
+  { icon: 'house', target: '.buy[data-id="house"]', title: 'Houses',
+    text: 'Houses go on the island. Each one brings 8 more people to your city. More people = more workers!' },
+  { icon: 'farmer', target: '#jobs', title: 'Give people jobs',
+    text: 'New people show up as free people, and free people do nothing! Use the + buttons to make them farmers (they make cacao) or warriors (they fight).' },
+  { icon: 'faith', target: '#statFaith', title: 'Faith',
+    text: 'If faith gets low, people work slower and fight weaker. Build temples to keep faith high, and don\'t let your island get too crowded.' },
+  { icon: 'war', target: '#enemies .enemy', title: 'Attack!',
+    text: 'Send your warriors to conquer other cities. Win and you get cacao, more warriors and more land. Lose and you lose warriors and faith. Watch out: enemies will raid you too!' },
+  { icon: 'altar', target: '#sacrifice', title: 'Sacrifice',
+    text: 'Need cacao fast? Give one person to the gods for 5 cacao and a little faith.' },
+  { icon: 'ollin', target: '#canvas', title: 'Day, night and events',
+    text: 'At night the farms stop and everyone goes home. Every few minutes something happens, like a famine or a festival. Good luck!' },
+];
+let tutStep = -1;   // -1 means the tutorial is closed
+
+function startTutorial() {
+  stopPlacing();
+  tutStep = 0;
+  document.getElementById('tutBlock').style.display = 'block';
+  document.getElementById('tutBox').style.display = 'flex';
+  showTutorialStep();
+}
+function showTutorialStep() {
+  const step = TUTORIAL[tutStep];
+  document.getElementById('tutGlyph').src = glyph(step.icon) || '';
+  document.getElementById('tutTitle').textContent = step.title;
+  document.getElementById('tutText').textContent = step.text;
+  document.getElementById('tutStep').textContent = `${tutStep + 1} of ${TUTORIAL.length}`;
+  document.getElementById('tutNext').textContent = tutStep === TUTORIAL.length - 1 ? "Let's play!" : 'Next';
+  document.getElementById('tutSkip').style.display = tutStep === TUTORIAL.length - 1 ? 'none' : '';
+  const target = step.target && document.querySelector(step.target);
+  if (target) target.scrollIntoView({ block: 'nearest' });
+  setTimeout(placeTutorial, 60);   // wait a moment for scrolling to finish
+}
+function placeTutorial() {
+  if (tutStep < 0) return;
+  const step = TUTORIAL[tutStep], hole = document.getElementById('tutHole'), box = document.getElementById('tutBox');
+  const target = step.target && document.querySelector(step.target);
+  const bw = box.offsetWidth, bh = box.offsetHeight, vw = innerWidth, vh = innerHeight;
+  if (!target) {
+    hole.style.display = 'none';
+    document.getElementById('tutBlock').style.background = 'rgba(10, 8, 6, .62)';
+    box.style.left = (vw - bw) / 2 + 'px'; box.style.top = (vh - bh) / 2 + 'px';
+    return;
+  }
+  document.getElementById('tutBlock').style.background = 'none';
+  const r = target.getBoundingClientRect(), pad = 6;
+  const top = Math.max(4, r.top - pad), bottom = Math.min(vh - 4, r.bottom + pad);
+  Object.assign(hole.style, { display: 'block', left: (r.left - pad) + 'px', top: top + 'px', width: (r.width + pad * 2) + 'px', height: (bottom - top) + 'px' });
+  // put the note below the spotlight if there's room, otherwise above it, otherwise inside it
+  let y = bottom + 12;
+  if (y + bh > vh - 8) y = top - bh - 12;
+  if (y < 8) y = Math.min(vh - bh - 8, Math.max(8, (top + bottom) / 2 - bh / 2));
+  const x = Math.min(vw - bw - 8, Math.max(8, r.left + r.width / 2 - bw / 2));
+  box.style.left = x + 'px'; box.style.top = y + 'px';
+}
+function endTutorial() {
+  tutStep = -1;
+  for (const id of ['tutBlock', 'tutHole', 'tutBox']) document.getElementById(id).style.display = 'none';
+  game.tutorialDone = true;
+  save();
+}
+document.getElementById('tutNext').onclick = () => {
+  if (tutStep >= TUTORIAL.length - 1) endTutorial(); else { tutStep++; showTutorialStep(); }
+};
+document.getElementById('tutSkip').onclick = endTutorial;
+document.getElementById('helpBtn').onclick = startTutorial;
+window.addEventListener('resize', placeTutorial);
+
+/* ---------- MUSIC ----------
+   Background music made from code (no sound files needed!) using
+   sounds like real Aztec instruments:
+     huehuetl   = a big upright drum
+     teponaztli = a hollow log drum that plays two notes
+     ayoyotl    = rattles made of seeds and shells
+     tlapitzalli = a clay flute
+     atecocolli = a conch shell trumpet
+   Songs:
+     "The Day of an Aztec" has a day part, a quiet night part,
+       and war drums when a raid is coming.
+     "The Aztecs Attack" is a fast battle song.
+     "Market Day" is a happy, simple song.
+   It makes up new flute tunes as it goes, so it's never exactly the same. */
+const MUSIC_VOLUME = 0.35;
+const SCALE = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24];   // a five-note (pentatonic) scale, two octaves
+const ROOT = 62;   // D
+
+function makeMusic(ac, out) {
+  const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
+  const master = ac.createGain(); master.gain.value = MUSIC_VOLUME;
+  const comp = ac.createDynamicsCompressor(); master.connect(comp); comp.connect(out);
+  // a little echo, like playing in a stone plaza
+  const len = Math.floor(ac.sampleRate * 2.2), echo = ac.createBuffer(2, len, ac.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = echo.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2); }
+  const reverb = ac.createConvolver(); reverb.buffer = echo;
+  const wet = ac.createGain(); wet.gain.value = 0.3; reverb.connect(wet); wet.connect(master);
+  const bus = ac.createGain(); bus.connect(master); bus.connect(reverb);
+  const noise = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+  { const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+
+  const env = (g, t, vol, attack, decay) => {
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+  };
+  const tone = (t, type, freq, vol, attack, decay, endFreq) => {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, t + decay * 0.7);
+    env(g, t, vol, attack, decay); o.connect(g); g.connect(bus); o.start(t); o.stop(t + attack + decay + 0.05);
+  };
+  const hiss = (t, type, freq, q, vol, decay) => {
+    const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    src.buffer = noise; f.type = type; f.frequency.value = freq; f.Q.value = q;
+    env(g, t, vol, 0.003, decay); src.connect(f); f.connect(g); g.connect(bus);
+    src.start(t, Math.random() * 0.5); src.stop(t + decay + 0.05);
+  };
+
+  const smallDrum = (t, vol) => { tone(t, 'sine', 210, vol, 0.003, 0.28, 120); hiss(t, 'bandpass', 900, 1.2, vol * 0.4, 0.06); };   // tlapanhuehuetl
+  const huehuetl = (t, vol) => { tone(t, 'sine', 115, vol, 0.004, 0.75, 46); hiss(t, 'lowpass', 500, 1, vol * 0.35, 0.09); };
+  const teponaztli = (t, high, vol) => {
+    const f = high ? midiHz(ROOT + 7) : midiHz(ROOT);
+    tone(t, 'triangle', f, vol, 0.002, 0.22); tone(t, 'sine', f * 2.76, vol * 0.25, 0.002, 0.07);
+    hiss(t, 'bandpass', f * 3, 3, vol * 0.25, 0.03);
+  };
+  const rattle = (t, vol, length = 0.07) => hiss(t, 'highpass', 6500, 0.7, vol, length);
+  const flute = (t, midi, dur, vol) => {
+    const f = midiHz(midi), o = ac.createOscillator(), o2 = ac.createOscillator(), g = ac.createGain();
+    const lfo = ac.createOscillator(), depth = ac.createGain();
+    o.type = 'triangle'; o2.type = 'sine';
+    o.frequency.setValueAtTime(f * 0.97, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.07);   // a little scoop up into the note
+    o2.frequency.setValueAtTime(f * 2, t);
+    lfo.frequency.value = 5.3; depth.gain.setValueAtTime(0, t); depth.gain.linearRampToValueAtTime(f * 0.012, t + Math.min(0.4, dur * 0.6));  // vibrato
+    lfo.connect(depth); depth.connect(o.frequency);
+    const g2 = ac.createGain(); g2.gain.value = 0.18; o2.connect(g2); g2.connect(g); o.connect(g); g.connect(bus);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.06);
+    g.gain.setValueAtTime(vol, t + Math.max(0.07, dur - 0.12)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.12);
+    for (const x of [o, o2, lfo]) { x.start(t); x.stop(t + dur + 0.2); }
+    // breath noise
+    const src = ac.createBufferSource(), bf = ac.createBiquadFilter(), bg = ac.createGain();
+    src.buffer = noise; bf.type = 'bandpass'; bf.frequency.value = f * 2; bf.Q.value = 1.5;
+    bg.gain.setValueAtTime(0.0001, t); bg.gain.exponentialRampToValueAtTime(vol * 0.35, t + 0.04); bg.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.1);
+    src.connect(bf); bf.connect(bg); bg.connect(bus); src.start(t); src.stop(t + dur + 0.15);
+  };
+  const conch = (t, midi, dur, vol) => {
+    const f = midiHz(midi), lp = ac.createBiquadFilter(), g = ac.createGain();
+    lp.type = 'lowpass'; lp.frequency.value = 850; lp.Q.value = 2; lp.connect(g); g.connect(bus);
+    for (const detune of [0, 8]) {
+      const o = ac.createOscillator(); o.type = 'sawtooth'; o.detune.value = detune;
+      o.frequency.setValueAtTime(f * 0.94, t); o.frequency.linearRampToValueAtTime(f, t + 0.3);
+      o.frequency.setValueAtTime(f, t + dur * 0.75); o.frequency.exponentialRampToValueAtTime(f * 0.8, t + dur);   // falls at the end
+      o.connect(lp); o.start(t); o.stop(t + dur + 0.1);
+    }
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.35);
+    g.gain.setValueAtTime(vol, t + dur * 0.75); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  };
+  const drone = (t, midi, dur, vol) => {
+    for (const [m, type, v] of [[midi, 'sine', 1], [midi + 7, 'triangle', 0.35]]) {
+      const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = midiHz(m);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol * v, t + dur * 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(bus); o.start(t); o.stop(t + dur + 0.05);
+    }
+  };
+
+  /* flute tunes: make up a short tune, then repeat it with small changes */
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const newMotif = (low) => {
+    const notes = [], base = low ? 0 : 3;
+    let step = base + Math.floor(Math.random() * 3), beats = 0;
+    while (beats < 14) {
+      const len = pick([2, 2, 2, 4, 4, 6, 3, 1]);
+      if (Math.random() < 0.15 && beats > 0) notes.push({ rest: true, len });
+      else notes.push({ step, len });
+      beats += len;
+      step = Math.max(0, Math.min(SCALE.length - 1, step + pick([-2, -1, -1, 1, 1, 2, 0, 3])));
+    }
+    notes.push({ step: pick([base, base + 2, base + 3]), len: 6 });   // end on a strong note
+    return notes;
+  };
+  const vary = (motif) => motif.map(n => n.rest || Math.random() > 0.25 ? n : { ...n, step: Math.max(0, Math.min(SCALE.length - 1, n.step + pick([-1, 1]))) });
+
+  const music = { song: 'day', mode: 'day', bar: 0, nextBar: ac.currentTime + 0.15, motif: null, phrase: 0 };
+  const TEMPO = { day: 84, night: 62, war: 112, battle: 128, happy: 100 };
+  const sixteenth = mode => 60 / TEMPO[mode] / 4;
+
+  /* THE AZTECS ATTACK: a fast battle song.
+     It goes: drums build up (4 bars), flute riff + conch (8 bars),
+     a quiet drum breakdown (4 bars), then everything at once (8 bars). Then it starts over. */
+  const riffs = [
+    [0, 0, 3, 0, 5, 3, 0, 7],      // flute riffs, as steps in the scale (8 sixteenth-notes each)
+    [7, 5, 7, 8, 7, 5, 3, 5],
+    [3, 5, 7, 5, 3, 0, 1, 0],
+  ];
+  function battleBar(t, bar) {
+    const s16 = sixteenth('battle'), part = bar % 24, r = Math.random;
+    const section = part < 4 ? 'build' : part < 12 ? 'riff' : part < 16 ? 'break' : 'full';
+    const lastBar = part === 3 || part === 11 || part === 15 || part === 23;
+    for (let i = 0; i < 16; i++) {
+      const tt = t + i * s16;
+      // big drum: pounding beats with a kick before beat 3
+      if (section !== 'break' || i === 0) {
+        if (i % 4 === 0) huehuetl(tt, i === 0 ? 1 : 0.8);
+        if (i === 7 || (section === 'full' && i === 15)) huehuetl(tt, 0.55);
+      } else if (i === 8) huehuetl(tt, 0.5);
+      // log drum racing along
+      if (section === 'build') { if (i % 2 === 0 || part >= 2) teponaztli(tt, i % 4 === 2, (part + 1) * 0.06); }
+      else if (section !== 'break') teponaztli(tt, [2, 3, 6, 10, 11, 14].includes(i), i % 2 ? 0.16 : 0.28);
+      // rattles: every sixteenth, accents on the off-beats
+      rattle(tt, section === 'break' ? 0.06 : i % 4 === 2 ? 0.17 : 0.07, 0.05);
+      // drum fill at the end of each section
+      if (lastBar && i >= 8) smallDrum(tt, 0.3 + (i - 8) * 0.06);
+    }
+    // a low pulse underneath
+    if (section !== 'build') for (const i of [0, 3, 6, 8, 11, 14]) tone(t + i * s16, 'triangle', midiHz(ROOT - 24 + (part % 4 === 3 && i > 8 ? 1 : 0)), 0.12, 0.004, s16 * 2.2);
+    // conch battle calls
+    if (part === 4 || part === 16) conch(t, ROOT - 12, s16 * 14, 0.24);
+    if (part === 20) conch(t, ROOT - 5, s16 * 14, 0.22);
+    // flute riffs
+    if (section === 'riff' || section === 'full') {
+      const riff = riffs[Math.floor(part / 2) % riffs.length];
+      riff.forEach((step, k) => { if (r() > 0.08) flute(t + k * 2 * s16, ROOT + SCALE[step], s16 * 1.7, 0.21); });
+      if (section === 'full' && part % 2 === 1) flute(t + 8 * s16, ROOT + 12 + SCALE[pick([3, 5, 7])], s16 * 7.5, 0.17);
+    }
+  }
+
+  function playTune(t, mode, s16, low, vol) {
+    let notes = music.motif;
+    if (music.phrase % 4 === 1 || music.phrase % 4 === 3) notes = vary(notes);
+    let at = t;
+    for (const n of notes) {
+      if (!n.rest) flute(at, ROOT + SCALE[n.step] - (low ? 12 : 0), n.len * s16 * 0.95, vol);
+      at += n.len * s16;
+    }
+  }
+
+  /* MARKET DAY: a happy, simple song with a catchy flute tune.
+     Each tune line is a list of [step in the happy scale, length in sixteenth-notes]. */
+  const HAPPY_SCALE = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];   // a bright, major five-note scale
+  const tunes = {
+    A: [[0, 2], [1, 2], [2, 2], [3, 4], [2, 2], [1, 2], [0, 2]],
+    B: [[3, 2], [4, 2], [5, 4], [4, 2], [3, 2], [2, 4]],
+    C: [[2, 2], [3, 2], [4, 2], [3, 2], [2, 2], [1, 2], [2, 4]],
+    D: [[1, 2], [2, 2], [1, 2], [0, 4], [0, 6]],
+  };
+  const tuneOrder = ['A', 'B', 'A', 'D', 'C', 'B', 'A', 'D'];
+  const happyChords = [0, 5, 0, 7];   // bass notes: D, G, D, A
+  function happyBar(t, bar) {
+    const s16 = sixteenth('happy'), part = bar % 12, r = Math.random;
+    // bouncy drums
+    huehuetl(t, 0.5); huehuetl(t + 8 * s16, 0.38);
+    for (const [i, high] of [[0, 0], [4, 1], [6, 0], [10, 1], [12, 0], [14, 1]]) teponaztli(t + i * s16, high, 0.22);
+    for (let i = 0; i < 16; i++) rattle(t + i * s16, i % 4 === 2 ? 0.1 : 0.03, 0.05);
+    // bouncing bass
+    const chord = happyChords[bar % 4];
+    for (const [i, up] of [[0, 0], [4, 7], [8, 0], [12, 7]]) tone(t + i * s16, 'triangle', midiHz(ROOT - 24 + chord + up), 0.16, 0.005, s16 * 3);
+    // the flute tune plays for 8 bars, then 4 bars of just the beat
+    if (part < 8) {
+      let at = t;
+      for (const [step, len] of tunes[tuneOrder[part]]) {
+        const fancy = bar >= 12 && r() < 0.12 ? 1 : 0;   // after the first time, sometimes add a little extra note
+        flute(at, ROOT + HAPPY_SCALE[step + fancy], len * s16 * 0.9, 0.2);
+        at += len * s16;
+      }
+    } else if (part === 9 || part === 11) {
+      // a little whistle answer in the quiet part
+      flute(t + 8 * s16, ROOT + 12 + HAPPY_SCALE[pick([0, 2, 3])], s16 * 2, 0.1);
+      flute(t + 10 * s16, ROOT + 12 + HAPPY_SCALE[pick([1, 2, 4])], s16 * 4, 0.1);
+    }
+  }
+
+  function scheduleBar(t, mode) {
+    // count bars from when this song started, so each song starts at its beginning
+    if (mode !== music.lastMode) { music.lastMode = mode; music.songBar = 0; }
+    if (mode === 'battle') { battleBar(t, music.songBar++); return; }
+    if (mode === 'happy') { happyBar(t, music.songBar++); return; }
+    const bar = music.songBar++;
+    const s16 = sixteenth(mode), r = Math.random;
+    if (mode === 'war') {
+      for (let i = 0; i < 16; i++) {
+        const tt = t + i * s16;
+        if (i % 4 === 0 || i === 14) huehuetl(tt, i === 0 ? 1 : 0.75);
+        teponaztli(tt, i % 3 === 0, i % 2 ? 0.18 : 0.32);
+        rattle(tt, i % 2 ? 0.08 : 0.16, 0.05);
+      }
+      if (bar % 2 === 0) conch(t, ROOT - 12, s16 * 12, 0.22);
+      return;
+    }
+    if (mode === 'night') {
+      if (bar % 2 === 0) huehuetl(t, 0.4);
+      for (const i of [0, 6, 10, 12]) if (r() < 0.75) teponaztli(t + i * s16, i === 6 || i === 12, 0.14);
+      for (let i = 0; i < 16; i += 2) if (r() < 0.5) rattle(t + i * s16, 0.045, 0.12);
+      if (bar % 4 === 0) drone(t, ROOT - 24, s16 * 64, 0.12);
+      if (!music.motif || bar % 16 === 0) { music.motif = newMotif(true); music.phrase = 0; }
+      if (bar % 4 === 1 && r() < 0.8) { playTune(t, mode, s16 * 1.2, true, 0.13); music.phrase++; }
+      return;
+    }
+    // day
+    const drumBeats = bar % 2 ? [0, 6, 8, 14] : [0, 8, 10];
+    for (const i of drumBeats) huehuetl(t + i * s16, i === 0 ? 0.85 : 0.6);
+    const logPattern = [[0, 0], [3, 1], [4, 0], [7, 1], [8, 0], [10, 1], [12, 1], [14, 0]];
+    for (const [i, high] of logPattern) if (r() < 0.85) teponaztli(t + i * s16, high, 0.28);
+    for (let i = 0; i < 16; i++) rattle(t + i * s16, i % 4 === 2 ? 0.12 : 0.04);
+    if (bar % 16 === 0) conch(t, ROOT - 12, s16 * 14, 0.16);
+    // the flute plays 8 bars, then rests 4 bars
+    const spot = bar % 12;
+    if (spot === 0) { music.motif = newMotif(false); music.phrase = 0; }
+    if (spot >= 2 && spot < 10 && spot % 2 === 0) { playTune(t, mode, s16, false, 0.16); music.phrase++; }
+  }
+
+  music.tick = (until) => {
+    while (music.nextBar < until) {
+      const mode = music.song === 'battle' || music.song === 'happy' ? music.song : music.mode;
+      scheduleBar(music.nextBar, mode);
+      music.nextBar += sixteenth(mode) * 16;
+      music.bar++;
+    }
+  };
+  return music;
+}
+
+/* turn music on and off with the button. Browsers only allow sound after you click something. */
+let soundChoice = 'day', musicOn = true, musicCtx = null, music = null;   // soundChoice: 'day', 'battle', 'happy' or 'off'
+try {
+  const saved = localStorage.getItem(SAVE_NAME + '_music');
+  soundChoice = ['off', 'battle', 'happy'].includes(saved) ? saved : 'day';
+} catch (e) {}
+musicOn = soundChoice !== 'off';
+function startMusic() {
+  if (!musicOn) return;
+  if (!musicCtx) {
+    musicCtx = new (window.AudioContext || window.webkitAudioContext)();
+    music = makeMusic(musicCtx, musicCtx.destination);
+    music.song = soundChoice;
+    setInterval(() => {
+      if (!musicOn || document.hidden) return;
+      music.mode = raid ? 'war' : isNight() ? 'night' : 'day';
+      music.tick(musicCtx.currentTime + 0.4);
+    }, 60);
+  }
+  musicCtx.resume();
+  if (music.nextBar < musicCtx.currentTime) music.nextBar = musicCtx.currentTime + 0.1;
+}
+/* the sound menu: pick "The Day of an Aztec" or no sound */
+function updateMusicButton() {
+  document.getElementById('soundGlyph').src = glyph(musicOn ? 'drum' : 'drumOff');
+  document.querySelectorAll('#soundMenu button').forEach(b => b.classList.toggle('chosen', b.dataset.sound === soundChoice));
+}
+function setSound(choice) {
+  const changed = choice !== soundChoice;
+  soundChoice = choice;
+  musicOn = choice !== 'off';
+  try { localStorage.setItem(SAVE_NAME + '_music', choice); } catch (err) {}
+  if (musicOn) {
+    startMusic();
+    if (changed) { music.song = choice; music.nextBar = musicCtx.currentTime + 0.25; }   // switch songs right away
+  } else if (musicCtx) musicCtx.suspend();
+  updateMusicButton();
+  document.getElementById('soundMenu').classList.remove('open');
+}
+document.getElementById('soundBtn').onclick = () => document.getElementById('soundMenu').classList.toggle('open');
+document.querySelectorAll('#soundMenu button').forEach(b => b.onclick = () => setSound(b.dataset.sound));
+document.addEventListener('click', e => {   // clicking anywhere else closes the menu
+  if (!document.getElementById('soundWrap').contains(e.target)) document.getElementById('soundMenu').classList.remove('open');
+});
+document.addEventListener('pointerdown', startMusic, { once: true });
+document.addEventListener('visibilitychange', () => {
+  if (!musicCtx) return;
+  if (document.hidden) musicCtx.suspend(); else if (musicOn) startMusic();
+});
+updateMusicButton();
+
+/* ---------- START ---------- */
+document.getElementById('sacrifice').onclick = sacrifice;
+document.getElementById('stopPlacing').onclick = stopPlacing;
+const confirmBox = document.getElementById('confirmBox');
+document.getElementById('newGame').onclick = () => confirmBox.style.display = 'flex';
+document.getElementById('noNew').onclick = () => confirmBox.style.display = 'none';
+document.getElementById('yesNew').onclick = () => {
+  confirmBox.style.display = 'none';
+  stopPlacing();
+  game = newGame();
+  raid = null;
+  walkers.length = 0;
+  shownLand = 1;
+  save(); drawShop(); drawEnemies();
+  startTutorial();
+};
+fillGlyphs();
+load();
+shownLand = landSize();
+fixFarms();
+drawShop();
+drawEnemies();
+requestAnimationFrame(loop);
+if (!game.tutorialDone) setTimeout(startTutorial, 300);   // first time playing? show the tutorial
+</script>
+</body>
+</html>
