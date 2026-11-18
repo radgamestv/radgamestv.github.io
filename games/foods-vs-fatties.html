@@ -55,6 +55,20 @@
   #quit:hover{background:#80593a}
   #musicbtn{position:fixed;top:10px;right:10px;z-index:10;font-size:14px;font-weight:700;padding:6px 12px;border-radius:999px;
         border:2px solid #3d2a17;background:#ffd54a;color:#3d2a17;cursor:pointer}
+  /* ---- tutorial ---- */
+  #tutbtn{position:fixed;top:10px;left:10px;z-index:10;font-size:14px;font-weight:700;padding:6px 12px;border-radius:999px;
+        border:2px solid #3d2a17;background:#ffd54a;color:#3d2a17;cursor:pointer}
+  #tutbox{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:min(560px,90%);display:none;z-index:5;
+        background:#fdf3dc;color:#3d2a17;border:4px solid #8a5a36;border-radius:14px;padding:10px 16px;box-sizing:border-box;
+        font-size:17px;font-weight:700;line-height:1.35;text-align:center;box-shadow:0 6px 16px rgba(0,0,0,.45);pointer-events:none}
+  #tutbox.low{top:auto;bottom:10px}
+  #tutbox .step{font-size:12px;font-weight:800;color:#8a5a36;letter-spacing:1px;margin-bottom:4px}
+  #tutbox button{pointer-events:auto;margin-top:8px;font-size:17px;font-weight:800;padding:6px 20px;border-radius:10px;border:3px solid #3d2a17;
+        background:#ffd54a;color:#3d2a17;cursor:pointer;box-shadow:0 3px 0 #3d2a17}
+  .card.popin{animation:popin .5s ease-out backwards}
+  @keyframes popin{0%{transform:scale(0);opacity:0}70%{transform:scale(1.25);opacity:1}100%{transform:scale(1)}}
+  .card.tut{border-color:#ffd54a;animation:tutglow .8s ease-in-out infinite}
+  @keyframes tutglow{50%{box-shadow:0 0 14px 4px #ffd54a;transform:scale(1.08)}}
   #musicmenu{position:fixed;top:46px;right:10px;z-index:11;display:none;flex-direction:column;gap:6px;min-width:200px;
         background:#5a3b20;border:3px solid #3d2a17;border-radius:12px;padding:10px;box-shadow:0 6px 16px rgba(0,0,0,.4)}
   #musicmenu .mtitle{font-weight:800;font-size:13px;color:#f3d27a;text-align:left;padding:0 2px 2px}
@@ -92,6 +106,7 @@
 </head>
 <body>
 <button id="musicbtn"></button>
+<button id="tutbtn">🎓 Tutorial</button>
 <div id="musicmenu"></div>
 <div id="home">
   <h1 class="title"><span class="big">FOODS</span><span class="vs">vs</span><span class="big red">FATTIES</span></h1>
@@ -118,6 +133,7 @@
   <div style="position:relative">
     <canvas id="cv" width="900" height="500"></canvas>
     <div id="overlay" style="display:none"></div>
+    <div id="tutbox"></div>
   </div>
 </div>
 <script>
@@ -312,9 +328,10 @@ function update(dt){
     S.pickups.push({x:60+Math.random()*(W-120),y:-20,ty:60+Math.random()*(H-120),life:10, crumb:true}); // only crumbs fall from the sky
     S.nextSky=S.t+10+Math.random()*4; // crumbs fall every 10-14 seconds
   }
+  // candy bars pop forward (toward the fatties) and stay on the board, even in the last column
   for(const p of S.pickups){
     if(p.vy!==undefined){ // candy bar jumping out of the plant
-      p.vy+=600*dt; p.x+=p.vx*dt; p.y+=p.vy*dt;
+      p.vy+=600*dt; p.x=Math.min(W-30,Math.max(30,p.x+p.vx*dt)); p.y+=p.vy*dt;
       if(p.vy>0 && p.y>=p.ty){ p.y=p.ty; delete p.vy; }
     } else if(p.y<p.ty) p.y+=60*dt;
     p.life-=dt; if(p.life<=0) p.dead=true;
@@ -328,7 +345,7 @@ function update(dt){
     if(fd.restT>0) fd.restT-=dt; // spaghetti trap resting after a big meal
     if(S.quakeUntil>S.t) continue; // earthquake! the foods are too dizzy to do anything
     fd.timer-=dt*(S.rushUntil>S.t?RUSH_SPEED:1); // sugar rush makes every food work twice as fast
-    if(F.make && fd.timer<=0){ fd.timer=F.make; S.pickups.push({x:cx,y:cy,vx:(Math.random()<.5?-1:1)*(30+Math.random()*30),vy:-260,ty:cy+30,life:12}); float(cx,cy-30,'pop!'); }
+    if(F.make && fd.timer<=0){ fd.timer=F.make; S.pickups.push({x:cx,y:cy,vx:30+Math.random()*30,vy:-260,ty:cy+30,life:12}); float(cx,cy-30,'pop!'); }
     if(F.fire && fd.timer<=0){
       // which rows does this food shoot into? popcorn: its own row AND the rows above and below
       const rows=F.spread?[r-1,r,r+1].filter(rr=>rr>=0&&rr<ROWS):[r];
@@ -413,7 +430,7 @@ function update(dt){
     // Balloon Fatty: floats over everything (no eating, no butter) until salt pops his balloons
     if(z.floating){
       z.x-=F.speed*dt; z.wob+=dt*3; z.jumpH=70+Math.sin(z.wob)*6;
-      if(z.x<-10){ S.over=true; S.won=false; }
+      if(z.x<-10){ if(tut) z.dead=true; else { S.over=true; S.won=false; } }
       continue;
     }
     if(z.jumpH>0 && !z.jump){ z.jumpH=Math.max(0,z.jumpH-260*dt); continue; } // falling down after his balloons pop
@@ -477,7 +494,7 @@ function update(dt){
     if(z.eating) fd.hp-=F.bite*slow*dt; else z.x-=F.speed*slow*dt;
     z.wob-=dt*(1-slow)*5;
     z.wob+=dt*(z.eating?14:5);
-    if(z.x<-10){ S.over=true; S.won=false; }
+    if(z.x<-10){ if(tut) z.dead=true; else { S.over=true; S.won=false; } }
   }
 
   // Chef Fatty: every few seconds he tosses snacks to the fatties near him and heals them
@@ -516,7 +533,7 @@ function update(dt){
   S.floaters=S.floaters.filter(f=>f.life>0);
   if(S.banner){ S.banner.life-=dt; if(S.banner.life<=0) S.banner=null; }
 
-  if(S.t>DURATION && S.fatties.length===0){ S.over=true; S.won=true; }
+  if(!tut && S.t>DURATION && S.fatties.length===0){ S.over=true; S.won=true; }
 }
 
 // ---- draw ----
@@ -813,6 +830,7 @@ function loop(ts){
   const dt=Math.min(0.05,(ts-last)/1000); last=ts;
   if(running){
     update(dt);
+    if(tut) tutTick();
     if(S.over){
       running=false;
       const btns='<div class="btns"><button id="start">'+(S.won?'Play again':'Try again')+'</button><button id="gohome" class="home">🏠 Home</button></div>';
@@ -1295,9 +1313,65 @@ function drawHome(dt){
   ctx=saved;
 }
 document.getElementById('quit').onclick=()=>showHome(); // quit the game and go back to the homepage
-function showHome(){ running=false; overlay.style.display='none'; homeShown=true; homeEl.style.display=''; wrapEl.style.display='none'; }
-function beginGame(test){ testMode=test; startMusic(); homeShown=false; homeEl.style.display='none'; wrapEl.style.display=''; start(); }
+function showHome(){ endTutorial(); running=false; overlay.style.display='none'; homeShown=true; homeEl.style.display=''; wrapEl.style.display='none'; }
+function beginGame(test){ tutBtn.style.display='none'; testMode=test; startMusic(); homeShown=false; homeEl.style.display='none'; wrapEl.style.display=''; start(); }
 document.getElementById('play').onclick=()=>beginGame(false);
+
+// ---- 🎓 Tutorial: a quick practice round that teaches you how to play ----
+// each step says something, and moves on when you do what it says (or press the button)
+const tutBtn=document.getElementById('tutbtn'), tutBox=document.getElementById('tutbox');
+let tut=null;
+function countFood(type){ let n=0; for(const row of S.grid) for(const f of row) if(f&&f.type===type) n++; return n; }
+const TUT=[
+  {say:"Welcome to the diner! 🍔 Hungry fatties walk in from the right and try to eat their way to the kitchen on the left. Your foods stop them!", btn:"Next ▶"},
+  {say:"Foods cost 🍫 candy bars. You have some up in the top left. Click the <b>Candy Bar</b> card at the top.", card:'candy', done:()=>S.sel==='candy'},
+  {say:"Now click any square on the floor to put your Candy Bar down.", card:'candy', done:()=>countFood('candy')>0},
+  {say:"Your Candy Bar makes more candy bars! When one pops out, click it to collect <b>+50</b>.", start:()=>{tut.c0=S.crumbs; for(const row of S.grid) for(const f of row) if(f&&f.type==='candy') f.timer=Math.min(f.timer,1);} /* pop one out fast, no 15 second wait */, done:()=>S.crumbs>=tut.c0+50},
+  {say:"Look up! 🥐 Crumbs fall from the sky every few seconds. Click a crumb before it disappears to collect <b>+25</b>.", low:true, start:()=>{tut.c1=S.crumbs; tutCrumb();},
+    done:()=>{ if(S.crumbs>=tut.c1+25) return true; if(!S.pickups.some(p=>p.crumb)) tutCrumb(); return false; }}, // missed it? another one falls
+  {say:"Now let's stop some fatties. Click the <b>Pizza Shooter</b> card, then click a square to put it down. It shoots cheese!", card:'pizza', done:()=>countFood('pizza')>0},
+  {say:"Here comes a fatty! 😱 Your Pizza Shooter shoots at fatties in its own row. Watch!", start:()=>{
+      let row=2; S.grid.forEach((r,i)=>{ if(r.some(f=>f&&f.type==='pizza')) row=i; });
+      spawn('normal',row); tut.fatty=S.fatties[S.fatties.length-1]; tut.fatty.hp=tut.fatty.max=3; // a weak practice fatty
+    }, done:()=>tut.fatty && !S.fatties.includes(tut.fatty)},
+  {say:"He's full! 🎉 That's how you play: make candy bars, grab crumbs, and buy foods to stop the fatties before they reach the kitchen. In the real game you can pick from lots of different foods, and they all do something different: some shoot, some block, some trap, and some go BOOM! Try them all, and check the 📖 Guide Book to learn about every food and fatty. Good luck!", btn:"Back to homepage", end:true}
+];
+function tutCrumb(){ S.pickups.push({x:450,y:40,ty:250,life:10,crumb:true}); } // drop one crumb in the middle of the floor
+const TUT_FOODS=['candy','pizza'];
+function tutGo(i){
+  tut.step=i; const st=TUT[i];
+  if(st.start) st.start();
+  tutBox.innerHTML='<div class="step">TUTORIAL · STEP '+(i+1)+' OF '+TUT.length+'</div><div>'+st.say+'</div>'+(st.btn?'<button id="tutnext">'+st.btn+'</button>':'');
+  tutBox.style.display='block';
+  tutBox.classList.toggle('low',!!st.low); // some steps put the box at the bottom so you can see the top of the floor
+  if(st.btn) document.getElementById('tutnext').onclick=()=>{ if(st.end) showHome(); else tutGo(i+1); };
+  for(const k in cardEls) cardEls[k].classList.toggle('tut',k===st.card);
+  // in the tutorial you only get the Candy Bar and Pizza Shooter. at the very end, all the other foods pop up!
+  let n=0;
+  for(const k in cardEls){
+    const el=cardEls[k];
+    if(TUT_FOODS.includes(k)) continue;
+    if(st.end){ el.style.display=''; el.classList.add('popin'); el.style.animationDelay=(0.3+n++*0.15)+'s'; }
+    else el.style.display='none';
+  }
+}
+function tutTick(){
+  const st=TUT[tut.step];
+  if(st.done && st.done()) tutGo(tut.step+1);
+}
+function beginTutorial(){
+  beginGame(false);
+  tut={step:0};
+  S.crumbs=150; S.nextSpawn=1e9; S.nextSky=1e9; S.bigWave=true; // no normal fatties or falling crumbs during the tutorial
+  document.getElementById('prog').style.visibility='hidden';
+  tutGo(0);
+}
+function endTutorial(){
+  tut=null; tutBox.style.display='none'; tutBtn.style.display='';
+  document.getElementById('prog').style.visibility='';
+  for(const k in cardEls){ const el=cardEls[k]; el.classList.remove('tut','popin'); el.style.display=''; el.style.animationDelay=''; }
+}
+tutBtn.onclick=beginTutorial;
 
 // ---- funny news on the homepage (a new headline every few seconds) ----
 // add your own headlines to this list!
@@ -1328,7 +1402,15 @@ const NEWS=[
   "Fatty orders 'one of everything.' Diner runs out of everything.",
   "Pizza and burger still arguing over who's the best food. Day 400.",
   "Local man wins the lottery, spends it all on butter for 'protection.'",
-  "Earthquake reported in the diner. Cause: one guy jumped really hard."
+  "Earthquake reported in the diner. Cause: one guy jumped really hard.",
+  "Balloon Fatty spotted floating over the diner. Salt Shaker says 'I got this.'",
+  "Chef Fatty opens a cooking show. Every episode is just him eating the ingredients.",
+  "Spaghetti Trap asked to stop slurping so loud. Spaghetti Trap slurps louder.",
+  "Sugar Rush drinks one soda, runs around the diner 400 times.",
+  "Bean Can wins 'Most Likely to Clear a Room' award for the 10th year in a row.",
+  "Buttered Up Fatty slides past the finish line, keeps going, ends up in Canada.",
+  "Spoon tired of being called a shovel. Says 'I am a SPOON.'",
+  "Fork Thrower misses every throw at the dartboard. Hits the pizza every time."
 ];
 const newsEl=document.getElementById('newstext');
 let newsOrder=[], newsTimer=null;
